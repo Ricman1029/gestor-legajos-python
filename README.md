@@ -6,9 +6,9 @@ Sistema de automatización administrativa desarrollado en Python para la gestió
 
 * **Gestión Multi-Empresa:** Alta, baja (lógica) y modificación de empresas con sus respectivas razones sociales y datos fiscales.
 * **Administración de Personal:** ABM de empleados con gestión de categorías, convenios y sindicatos.
-* **Generación de Documentos (Híbrida):**
+* **Generación de Documentos:**
     * Creación de contratos de ~18 páginas en un solo archivo PDF.
-    * Superposición de datos en formularios oficiales existentes (AFIP, Anses) usando `PyMuPDF`.
+    * Completado de datos en formularios oficiales existentes (AFIP/ARCA, Anses) usando `PyMuPDF`.
     * Generación dinámica de cláusulas contractuales.
 
 ## 🛠️ Stack Tecnológico
@@ -16,7 +16,7 @@ Sistema de automatización administrativa desarrollado en Python para la gestió
 Este proyecto está construido utilizando tecnologías modernas de Python para escritorio y manipulación de documentos:
 
 * **[Flet](https://flet.dev/):** Framework de UI basado en Flutter para crear interfaces modernas y reactivas en Python.
-* **PyMuPDF (Fitz) & pypdf:** Motores potentes para la lectura, renderizado y superposición de datos en formularios oficiales (AFIP/ANSES) preexistentes.
+* **PyMuPDF (Fitz) & pypdf:** Motores potentes para la lectura, renderizado y superposición de datos en formularios oficiales (AFIP/ARCA, ANSES) preexistentes.
 * **FPDF2:** Generación dinámica de contratos de texto desde cero.
 
 ## ⚙️ Instalación y Configuración
@@ -25,8 +25,8 @@ Para ejecutar este proyecto localmente, sigue estos pasos:
 
 1.  **Clonar el repositorio:**
     ```bash
-    git clone [https://github.com/tu-usuario/geledi-gestor-legajos.git](https://github.com/tu-usuario/geledi-gestor-legajos.git)
-    cd geledi-gestor-legajos
+    git clone https://github.com/Ricman1029/gestor-legajos-python
+    cd gestor-legajos-python
     ```
 
 2.  **Crear un entorno virtual (Recomendado):**
@@ -45,12 +45,13 @@ Para ejecutar este proyecto localmente, sigue estos pasos:
 
 4.  **Ejecutar la aplicación:**
     ```bash
-    flet run [app_directory]
+    flet run 
     ```
 ### 🐧 Requisitos adicionales para Linux (Ubuntu/WSL/Debian)
 
 Si ejecutas la aplicación en Linux y obtienes errores relacionados con librerías compartidas (GStreamer), necesitas instalar las dependencias gráficas del sistema:
 
+En Ubuntu:
 ```bash
 sudo apt-get update
 sudo apt-get install libgstreamer1.0-0 gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-plugins-ugly gstreamer1.0-libav gstreamer1.0-tools gstreamer1.0-x gstreamer1.0-alsa gstreamer1.0-gl libgtk-3-0
