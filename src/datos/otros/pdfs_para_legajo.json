@@ -1,0 +1,9 @@
+[
+  {
+    "constancia_entrega": ["General"],
+    "asignacion_familiar": ["Anses"],
+    "notificacion_art": ["Galeno", "Andina"],
+    "seguro_vida": ["Galeno", "Mapfre", "Andina"],
+    "notificacion_obra_social": ["General"]
+  }
+]
