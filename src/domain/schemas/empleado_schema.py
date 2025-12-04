@@ -44,11 +44,11 @@ class EmpleadoBase(BaseModel):
         # Lo vamos a hacer mas adelante
         return v
 
-class EmpleadosCreate(EmpleadoBase):
+class EmpleadoCreate(EmpleadoBase):
     """Necesitamos saber a qué empresa pertenece al crearlo"""
     empresa_id: int
 
-class EmpleadosUpdate(BaseModel):
+class EmpleadoUpdate(BaseModel):
     """campos opcionales para edición"""
 
     nombre: Optional[str] = None
