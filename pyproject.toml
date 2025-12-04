@@ -1,12 +1,18 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
 [project]
-name = "legajos_automaticos"
+name = "gestor_legajos"
 version = "0.1.0"
 description = ""
 readme = "README.md"
 requires-python = ">=3.8"
 dependencies = [
-  "flet==0.25.2"
+  "flet==0.28.3"
 ]
+[tool.setuptools.packages.find]
+where = ["src"]
 
 
 [tool.flet]
@@ -26,3 +32,10 @@ copyright = "Copyright (C) 2024 by Flet"
 
 [tool.flet.app]
 path = "src"
+
+[tool.pyrefly]
+project-includes = [
+    "**/*.py*",
+    "**/*.ipynb",
+]
+

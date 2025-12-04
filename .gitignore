@@ -163,6 +163,5 @@ cython_debug/
 storage/
 
 # Datos míos
-src/tests/*
 src/datos/empresas/*
 !src/datos/empresas/.gitkeep
