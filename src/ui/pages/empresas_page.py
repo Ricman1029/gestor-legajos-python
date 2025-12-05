@@ -2,7 +2,7 @@ import flet as ft
 from pydantic import ValidationError
 from src.core.database import get_db
 from src.data.repositories.empresa_repository import EmpresaRepository
-from src.domain.schemas.empresa_schema import EmpresaCreate
+from src.domain.schemas.empresa_schema import EmpresaCreate, EmpresaUpdate
 from src.ui.components.empresa_card import EmpresaCard
 
 class EmpresasPage(ft.Column):
@@ -10,7 +10,11 @@ class EmpresasPage(ft.Column):
         super().__init__()
         self.expand = True
 
-        # --- 1. REFERENCIAS A INPUTS ---
+        # Si es None, estamos creando
+        # Si tiene un ID, estamos editando
+        self.id_empresa_editar = None
+
+        # --- REFERENCIAS A INPUTS ---
         self.txt_razon_social = ft.TextField(label="Razón Social", expand=True)
         self.txt_cuit = ft.TextField(label="CUIT (sólo números)",max_length=11, expand=True)
         self.txt_convenio = ft.TextField(label="Convenio", expand=True)
@@ -28,7 +32,18 @@ class EmpresasPage(ft.Column):
         self.txt_telefono = ft.TextField(label="Teléfono", expand=True)
         self.txt_mail = ft.TextField(label="Email", expand=True)
 
-        # --- 2. EL DIÁLOGO ---
+        # --- EL DIÁLOGO ---
+        self.dialogo_borrar = ft.AlertDialog(
+                title=ft.Text("Confirmar eliminación"),
+                content=ft.Text("¿Estás seguro de que deseas eliminar esta empresa? Esta acción no se puede deshacer."),
+                actions=[
+                    ft.TextButton("Cancelar", on_click=self.cerrar_dialogo_borrar),
+                    ft.TextButton("Eliminar", on_click=self.confirmar_borrado, style=ft.ButtonStyle(color=ft.Colors.RED)),
+                    ],
+                actions_alignment=ft.MainAxisAlignment.END
+                )
+        self.id_a_borrar = None
+
         self.dialogo = ft.AlertDialog(
                 title=ft.Text("Nueva Empresa"),
                 content=ft.Column(
@@ -141,7 +156,9 @@ class EmpresasPage(ft.Column):
 
     # --- LÓGICA DEL FORMULARIO ---
     async def abrir_dialogo_crear(self, e):
-        # Limpiamos los controles del diálogo
+        self.id_empresa_editar = None
+        self.dialogo.title = ft.Text("Nueva Empresa")
+
         self._limpiar_controles_dialogo()
 
         # 3. Abrir diálogo
@@ -157,33 +174,59 @@ class EmpresasPage(ft.Column):
         self.dialogo.update()
 
         try:
-            # Creamos un DTO (Data Transfer Object)
-            # Pydantic va a validar longitudes, CUIT válido, etc.
-            nueva_empresa_schema = EmpresaCreate(
-                    razon_social=self.txt_razon_social.value,
-                    cuit=self.txt_cuit.value,
-                    convenio=self.txt_convenio.value,
-                    calle=self.txt_calle.value,
-                    numero=self.txt_numero.value,
-                    piso=self.txt_piso.value,
-                    depto=self.txt_depto.value,
-                    localidad=self.txt_localidad.value,
-                    provincia=self.txt_provincia.value,
-                    codigo_postal=self.txt_codigo_postal.value,
-                    telefono=self.txt_telefono.value,
-                    mail=self.txt_mail.value,
-                    )
+            # Si tenemos un id_empresa_editar, estamos editando
+            if self.id_empresa_editar:
+                update_schema = EmpresaUpdate(
+                        razon_social=self.txt_razon_social.value,
+                        cuit=self.txt_cuit.value,
+                        convenio=self.txt_convenio.value,
+                        calle=self.txt_calle.value,
+                        numero=self.txt_numero.value,
+                        piso=self.txt_piso.value,
+                        depto=self.txt_depto.value,
+                        localidad=self.txt_localidad.value,
+                        provincia=self.txt_provincia.value,
+                        codigo_postal=self.txt_codigo_postal.value,
+                        telefono=self.txt_telefono.value,
+                        mail=self.txt_mail.value,
+                        )
 
-            async for session in get_db():
-                repositorio = EmpresaRepository(session)
-                await repositorio.create(nueva_empresa_schema)
+                async for session in get_db():
+                    repositorio = EmpresaRepository(session)
+                    await repositorio.update(self.id_empresa_editar, update_schema)
+
+                mensaje = "Empresa actualizada correctamente"
+
+            else:
+                # Creamos un DTO (Data Transfer Object)
+                # Pydantic va a validar longitudes, CUIT válido, etc.
+                nueva_empresa_schema = EmpresaCreate(
+                        razon_social=self.txt_razon_social.value,
+                        cuit=self.txt_cuit.value,
+                        convenio=self.txt_convenio.value,
+                        calle=self.txt_calle.value,
+                        numero=self.txt_numero.value,
+                        piso=self.txt_piso.value,
+                        depto=self.txt_depto.value,
+                        localidad=self.txt_localidad.value,
+                        provincia=self.txt_provincia.value,
+                        codigo_postal=self.txt_codigo_postal.value,
+                        telefono=self.txt_telefono.value,
+                        mail=self.txt_mail.value,
+                        )
+
+                async for session in get_db():
+                    repositorio = EmpresaRepository(session)
+                    await repositorio.create(nueva_empresa_schema)
+
+                mensaje = "Empresa creada exitosamente"
 
             # Cerramos el diálogo
             self.page.close(self.dialogo)
             self.update()
 
             # Recargamos la Grid
-            self.page.open(ft.SnackBar(ft.Text("Empresa creada con éxito"), bgcolor=ft.Colors.GREEN))
+            self.page.open(ft.SnackBar(ft.Text(mensaje), bgcolor=ft.Colors.GREEN))
             await self.cargar_datos()
 
         except ValidationError as ve:
@@ -230,10 +273,82 @@ class EmpresasPage(ft.Column):
                 self.mostrar_error(f"Error inesperado al guardar: {ex}")
 
     async def editar_empresa(self, id_empresa):
-        print(f"Editando empresa {id_empresa}")
+        try:
+            self.loading.visible = True
+            self.update()
+
+            async for session in get_db():
+                repositorio = EmpresaRepository(session)
+                empresa = await repositorio.get_by_id(id_empresa)
+
+                if not empresa:
+                    self.mostrar_error("No se encontró las empresa")
+                    return
+
+                # Llenamos los inputs con los datos de la DB
+                self.id_empresa_editar = id_empresa
+                self.dialogo.title = ft.Text("Editar Empresa")
+
+                self.txt_razon_social.value = empresa.razon_social
+                self.txt_cuit.value = empresa.cuit
+                self.txt_convenio.value = empresa.convenio
+                self.txt_calle.value = empresa.calle
+                self.txt_numero.value = empresa.numero
+                self.txt_piso.value = empresa.piso
+                self.txt_depto.value = empresa.depto
+                self.txt_localidad.value = empresa.localidad
+                self.txt_provincia.value = empresa.provincia
+                self.txt_codigo_postal.value = empresa.codigo_postal
+                self.txt_telefono.value = empresa.telefono
+                self.txt_mail.value = empresa.mail
+
+                # Limpiamos errores previos
+                todos_los_inputs = [
+                    self.txt_razon_social, self.txt_cuit, self.txt_convenio,
+                    self.txt_calle, self.txt_numero, self.txt_piso,
+                    self.txt_depto, self.txt_localidad, self.txt_provincia,
+                    self.txt_codigo_postal, self.txt_telefono, self.txt_mail,
+                    ]
+                for control in todos_los_inputs:
+                    control.error_text = None
+
+                self.page.open(self.dialogo)
+                
+        except Exception as e:
+            self.mostrar_error(f"Error al cargar edición: {e}")
+        finally:
+            self.loading.visible = False
+            self.update()
 
     async def borrar_empresa(self, id_empresa):
-        print(f"Borrando empresa {id_empresa}")
+        self.id_a_borrar = id_empresa
+        self.page.open(self.dialogo_borrar)
+
+    async def cerrar_dialogo_borrar(self, e):
+        self.id_a_borrar = None
+        self.page.close(self.dialogo_borrar)
+
+    async def confirmar_borrado(self, e):
+        if not self.id_a_borrar: return
+
+        try:
+            self.page.close(self.dialogo_borrar)
+            self.loading.visible = True
+            self.update()
+
+            async for session in get_db():
+                repositorio = EmpresaRepository(session)
+                await repositorio.delete(self.id_a_borrar)
+
+            self.page.open(ft.SnackBar(ft.Text("Empresa eliminada"), bgcolor=ft.Colors.GREEN))
+            await self.cargar_datos()
+
+        except Exception as ex:
+            self.mostrar_error(f"Error al borrar: {ex}")
+        finally:
+            self.id_a_borrar = None
+            self.loading.visible = False
+            self.update()
 
     def mostrar_error(self, mensaje):
         self.page.open(ft.SnackBar(ft.Text(mensaje), bgcolor=ft.Colors.RED))
