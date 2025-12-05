@@ -62,4 +62,3 @@ class PdfService:
         except Exception as e:
             logging.error(f"Error generando PDF: {e}")
             return None
-            
