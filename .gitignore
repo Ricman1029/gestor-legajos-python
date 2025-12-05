@@ -166,3 +166,12 @@ storage/
 *.db
 *.sqlite3
 /db/
+
+# Archivos generados por la aplicación
+output_pdfs/
+*.pdf
+*.log
+
+# Archivos temporales de Typst
+temp_*.json
+temp_*.typ
