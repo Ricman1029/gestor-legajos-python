@@ -1,6 +1,20 @@
 from typing import Optional
 from pydantic import BaseModel, Field, ConfigDict, field_validator
 
+def _validar_cuit_logica(v: str) -> str:
+    limpio = v.replace("-", "").replace(" ", "")
+    if not limpio.isdigit():
+        raise ValueError("El CUIT debe contener solo números")
+
+    if len(limpio) != 11:
+        raise ValueError("El CUIT debe tener 11 dígitos")
+    return limpio
+
+def _validar_no_vacio(v: str, nombre_campo: str) -> str:
+    if not v or not v.strip():
+        raise ValueError(f"El campo {nombre_campo} no puede estar vacío")
+    return v
+
 class EmpresaBase(BaseModel):
     """Campos compartidos entre creación y lectura"""
     razon_social: str = Field(..., min_length=2, max_length=100)
@@ -25,13 +39,7 @@ class EmpresaBase(BaseModel):
     @field_validator("cuit")
     @classmethod
     def validar_cuit(cls, v: str) -> str:
-        # Limpiamos guiones por si el usuario los pone
-        limpio = v.replace("-", "").replace(" ", "")
-        if not limpio.isdigit():
-            raise ValueError("El CUIT debe contener solo números")
-        if len(limpio) != 11:
-            raise ValueError("El CUIT debe tener 11 dígitos")
-        return limpio
+        return _validar_cuit_logica(v)
 
 class EmpresaCreate(EmpresaBase):
     """Schema para CREAR una empresa (No tiene ID todavía)"""
@@ -52,6 +60,22 @@ class EmpresaUpdate(BaseModel):
     codigo_postal: Optional[str] = None
     telefono: Optional[str] = None
     mail: Optional[str] = None
+
+    # --- VALIDACIONES DE NEGOCIO ---
+    @field_validator("cuit")
+    @classmethod
+    def validar_cuit_update(cls, v: Optional[str]) -> Optional[str]:
+        if v is None:
+            return None
+        return _validar_cuit_logica(v)
+
+    # --- VALIDACIONES DE NEGOCIO ---
+    @field_validator("razon_social", "convenio", "calle", "numero", "localidad", "provincia", "codigo_postal")
+    @classmethod
+    def validar_cuit(cls, v: Optional[str], info) -> Optional[str]:
+        if v is None:
+            return None
+        return _validar_no_vacio(v, info.field_name)
 
 class EmpresaSchema(EmpresaBase):
     """
