@@ -9,10 +9,13 @@ class MainLayout(ft.Row):
 
         # 1. Instanciamos las páginas UNA SOLA VEZ
         # Esto guarda el estado (si escribimos algo en algún input, no se borra al cambiar de página)
+        self.empresas_page = EmpresasPage(on_seleccionar_empresa=self.ir_a_empleados)
+        self.empleados_page = EmpleadosPage()
+
         self.pages = [
                 HomePage(),
-                EmpresasPage(),
-                EmpleadosPage(),
+                self.empresas_page,
+                self.empleados_page,
                 ]
 
         # 2. El área de Contenido
@@ -58,9 +61,17 @@ class MainLayout(ft.Row):
                 ]
 
     def on_nav_change(self, e):
-        """Manejador de evento: Cambia el contenido según el índice seleccionado"""
-        selected_index = e.control.selected_index
+        self.cambiar_pagina(e.control.selected_index)
 
-        # Cambiamos el contenido del contenedor derecho
-        self.content_area.content = self.pages[selected_index]
-        self.content_area.update()
+    def cambiar_pagina(self, index):
+        self.rail.selected_index = index
+        self.content_area.content = self.pages[index]
+        self.page.update()
+
+        if index == 2:
+            self.page.run_task(self.empleados_page.cargar_datos)
+
+    async def ir_a_empleados(self, empresa):
+        self.page.session.set("empresa_seleccionada_id", empresa.id)
+        self.page.session.set("empresa_seleccionada_nombre", empresa.razon_social)
+        self.cambiar_pagina(2)

@@ -6,8 +6,9 @@ from src.domain.schemas.empresa_schema import EmpresaCreate, EmpresaUpdate
 from src.ui.components.empresa_card import EmpresaCard
 
 class EmpresasPage(ft.Column):
-    def __init__(self):
+    def __init__(self, on_seleccionar_empresa: callable):
         super().__init__()
+        self.on_seleccionar_empresa = on_seleccionar_empresa
         self.expand = True
 
         # Si es None, estamos creando
@@ -145,7 +146,8 @@ class EmpresasPage(ft.Column):
                         card = EmpresaCard(
                                 empresa=empresa,
                                 on_edit=self.editar_empresa,
-                                on_delete=self.borrar_empresa
+                                on_delete=self.borrar_empresa,
+                                on_ver_empleados=self.navegar_a_empleados,
                                 )
                         self.grid.controls.append(card)
         except Exception as e:
@@ -349,6 +351,10 @@ class EmpresasPage(ft.Column):
             self.id_a_borrar = None
             self.loading.visible = False
             self.update()
+
+    async def navegar_a_empleados(self, empresa_obj):
+        if self.on_seleccionar_empresa:
+            await self.on_seleccionar_empresa(empresa_obj)
 
     def mostrar_error(self, mensaje):
         self.page.open(ft.SnackBar(ft.Text(mensaje), bgcolor=ft.Colors.RED))

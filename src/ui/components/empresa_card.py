@@ -6,12 +6,14 @@ class EmpresaCard(ft.Container):
             self,
             empresa: Empresa,
             on_edit: callable,
-            on_delete: callable
+            on_delete: callable,
+            on_ver_empleados: callable
             ):
         super().__init__()
         self.empresa = empresa
         self.on_edit = on_edit
         self.on_delete = on_delete
+        self.on_ver_empleados = on_ver_empleados
 
         # --- CONFIGURACIÓN VISUAL ---
         self.width = 280
@@ -99,10 +101,10 @@ class EmpresaCard(ft.Container):
                         on_click=self._borrar_click
                         ),
                     ft.IconButton(
-                        icon=ft.Icons.PICTURE_AS_PDF,
-                        icon_color=ft.Colors.GREEN,
-                        tooltip="Generar Reporte",
-                        on_click=lambda e: print("Generar reporte empresa...")
+                        icon=ft.Icons.PEOPLE,
+                        icon_color=ft.Colors.INDIGO,
+                        tooltip="Ver Empleados",
+                        on_click=self._ver_empleados_click
                         ),
                     ]
                 )
@@ -126,6 +128,9 @@ class EmpresaCard(ft.Container):
 
     async def _borrar_click(self, e):
         await self.on_delete(self.empresa.id)
+
+    async def _ver_empleados_click(self, e):
+        await self.on_ver_empleados(self.empresa)
 
     def animar_tarjeta(self, e):
         """
