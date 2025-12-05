@@ -229,7 +229,7 @@ class EmpresasPage(ft.Column):
             else:   
                 self.mostrar_error(f"Error inesperado al guardar: {ex}")
 
-    def editar_empresa(self, id_empresa):
+    async def editar_empresa(self, id_empresa):
         print(f"Editando empresa {id_empresa}")
 
     async def borrar_empresa(self, id_empresa):

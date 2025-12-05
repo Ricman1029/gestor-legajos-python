@@ -90,13 +90,13 @@ class EmpresaCard(ft.Container):
                         icon=ft.Icons.EDIT_OUTLINED,
                         icon_color=ft.Colors.BLUE,
                         tooltip="Editar Empresa",
-                        on_click=lambda e: self.on_edit(self.empresa.id)
+                        on_click=self._editar_click
                         ),
                     ft.IconButton(
                         icon=ft.Icons.DELETE_OUTLINE,
                         icon_color=ft.Colors.RED,
                         tooltip="Eliminar Empresa",
-                        on_click=lambda e: self.on_delete(self.empresa.id)
+                        on_click=self._borrar_click
                         ),
                     ft.IconButton(
                         icon=ft.Icons.PICTURE_AS_PDF,
@@ -120,6 +120,12 @@ class EmpresaCard(ft.Container):
 
         # Eventos
         self.on_hover = self.animar_tarjeta
+
+    async def _editar_click(self, e):
+        await self.on_edit(self.empresa.id)
+
+    async def _borrar_click(self, e):
+        await self.on_delete(self.empresa.id)
 
     def animar_tarjeta(self, e):
         """
