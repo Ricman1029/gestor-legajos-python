@@ -26,6 +26,7 @@ class EmpleadoBase(BaseModel):
     depto: Optional[str] = None
     localidad: str
     provincia: str
+    codigo_postal: str
     telefono: Optional[str]
 
     @field_validator("dni")
@@ -74,6 +75,7 @@ class EmpleadoUpdate(BaseModel):
     depto: Optional[str] = None
     localidad: Optional[str] = None
     provincia: Optional[str] = None
+    codigo_postal: Optional[str] = None
     telefono: Optional[str] = None
 
 class EmpleadoSchema(EmpleadoBase):

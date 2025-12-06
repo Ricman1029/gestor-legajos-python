@@ -68,8 +68,8 @@ class MainLayout(ft.Row):
         self.content_area.content = self.pages[index]
         self.page.update()
 
-        if index == 2:
-            self.page.run_task(self.empleados_page.cargar_datos)
+        # if index == 2:
+        #     self.page.run_task(self.empleados_page.cargar_datos)
 
     async def ir_a_empleados(self, empresa):
         self.page.session.set("empresa_seleccionada_id", empresa.id)
