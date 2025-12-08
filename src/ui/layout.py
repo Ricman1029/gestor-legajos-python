@@ -1,5 +1,5 @@
 import flet as ft
-from src.ui.pages import HomePage, EmpresasPage, EmpleadosPage
+from src.ui.pages import HomePage, EmpresasPage, EmpleadosPage, ConfigPage
 
 class MainLayout(ft.Row):
     def __init__(self, page: ft.Page):
@@ -16,6 +16,7 @@ class MainLayout(ft.Row):
                 HomePage(),
                 self.empresas_page,
                 self.empleados_page,
+                ConfigPage(),
                 ]
 
         # 2. El área de Contenido
@@ -48,6 +49,11 @@ class MainLayout(ft.Row):
                         icon=ft.Icons.PEOPLE_OUTLINE,
                         selected_icon=ft.Icons.PEOPLE,
                         label="Empleados"
+                        ),
+                    ft.NavigationRailDestination(
+                        icon=ft.Icons.SETTINGS_OUTLINED,
+                        selected_icon=ft.Icons.SETTINGS,
+                        label="Configuración"
                         ),
                     ],
                 on_change=self.on_nav_change

@@ -1,6 +1,8 @@
 import flet as ft
 from datetime import datetime
 from pydantic import ValidationError
+from data.repositories.empresa_repository import EmpresaRepository
+from data.repositories.parametricos_repository import CategoriaRepository
 from src.core.database import get_db
 from src.data.repositories.empleado_repository import EmpleadoRepository, EmpleadoCreate, EmpleadoUpdate
 from src.domain.services.gestor_service import GestorLegajosService
@@ -18,7 +20,7 @@ class EmpleadosPage(ft.Column):
         # B. Personales
         self.txt_nombre = ft.TextField(label="Nombre", expand=True)
         self.txt_apellido = ft.TextField(label="Apellido", expand=True)
-        self.txt_cuil = ft.TextField(label="CUIL", expand=True)
+        self.txt_cuil = ft.TextField(label="CUIL (solo números)", max_length=11, expand=True)
         self.dd_sexo = ft.Dropdown(label="Sexo", options=[
             ft.dropdown.Option("Masculino"),
             ft.dropdown.Option("Femenino"),
@@ -31,7 +33,7 @@ class EmpleadosPage(ft.Column):
         self.txt_legajo = ft.TextField(label="Nro Legajo", expand=True)
         self.txt_ingreso = ft.TextField(label="Fecha Ingreso (DD/MM/AAAA)", expand=True)
         self.txt_sueldo = ft.TextField(label="Sueldo", prefix_text="$ ", expand=True)
-        self.txt_categoria = ft.TextField(label="Categoría", expand=True)
+        self.dd_categoria = ft.Dropdown(label="Categoría", expand=True)
         self.txt_obra_social = ft.TextField(label="Obra Social", expand=True)
 
         # D. Domicilio
@@ -74,7 +76,7 @@ class EmpleadosPage(ft.Column):
                                 content=ft.Column([
                                     ft.Text("Contratación", weight=ft.FontWeight.BOLD),
                                     ft.Row([self.txt_legajo, self.txt_ingreso]),
-                                    ft.Row([self.txt_categoria, self.txt_sueldo]),
+                                    ft.Row([self.dd_categoria, self.txt_sueldo]),
                                     self.txt_obra_social,
                                     ], scroll=ft.ScrollMode.AUTO, spacing=15)
                                 ),
@@ -246,7 +248,7 @@ class EmpleadosPage(ft.Column):
                                 ft.DataCell(ft.Text(empleado.numero_legajo or "-")),
                                 ft.DataCell(ft.Text(f"{empleado.apellido}, {empleado.nombre}", weight=ft.FontWeight.BOLD)),
                                 ft.DataCell(ft.Text(empleado.cuil)),
-                                ft.DataCell(ft.Text(empleado.categoria)),
+                                ft.DataCell(ft.Text(empleado.categoria_rel.nombre)),
                                 ft.DataCell(ft.Text(texto_estado, size=12)),
                                 ft.DataCell(
                                     ft.Row([
@@ -279,8 +281,55 @@ class EmpleadosPage(ft.Column):
 
 
     async def generar_contrato(self, e):
-        print("Genera contrato")
-        pass
+        id_empleado = e.control.data
+
+        self.loading.visible = True
+        self.update()
+        self.page.open(ft.SnackBar(ft.Text("Generando contrato para el empleado"), bgcolor=ft.Colors.BLUE))
+        
+        try:
+            async for session in get_db():
+                servicio = GestorLegajosService(session)
+
+                ruta_pdf = await servicio.generar_contrato_empleado(id_empleado)
+
+                if ruta_pdf:
+                    self.page.open(ft.SnackBar(
+                        ft.Text(f"El legajo fue generado con éxito en: {ruta_pdf}"),
+                        bgcolor=ft.Colors.GREEN
+                        ))
+                else:
+                    self.page.open(ft.SnackBar(
+                        ft.Text("Error: El servicio no devolvió una ruta válida"),
+                        bgcolor=ft.Colors.RED
+                        ))
+
+        except Exception as ex:
+            print(f"Error generando PDF: {ex}")
+            self.page.open(ft.SnackBar(
+                ft.Text(f"Error generando PDF: {ex}"),
+                bgcolor=ft.Colors.RED
+                ))
+
+        finally:
+            self.loading.visible = False
+            self.update()
+
+    async def _cargar_opciones_categorias(self, session, id_empresa: int):
+        repositorio_empresa = EmpresaRepository(session)
+        repositorio_categoria = CategoriaRepository(session)
+
+        empresa = await repositorio_empresa.get_para_edicion(id_empresa)
+
+        opciones = []
+        if empresa and empresa.convenio_rel:
+            categorias = await repositorio_categoria.get_by_convenio(empresa.convenio_rel.id)
+            opciones = [
+                    ft.dropdown.Option(key=str(categoria.id), text=categoria.nombre)
+                    for categoria in categorias
+                    ]
+
+        self.dd_categoria.options = opciones
 
     async def abrir_crear(self, e):
         self.id_empleado_editar = None
@@ -289,6 +338,17 @@ class EmpleadosPage(ft.Column):
 
         nombre_empresa = self.page.session.get("empresa_seleccionada_nombre")
         self.txt_empresa.value = nombre_empresa
+
+        id_empresa = self.page.session.get("empresa_seleccionada_id")
+
+        if id_empresa:
+            self.loading.visible = True
+            self.update()
+
+            async for session in get_db():
+                await self._cargar_opciones_categorias(session, id_empresa)
+
+            self.loading.visible = False
 
         self.page.open(self.dialogo)
         self.page.update()
@@ -302,7 +362,10 @@ class EmpleadosPage(ft.Column):
         try:
             empresa_id = self.page.session.get("empresa_seleccionada_id")
             if not empresa_id:
-                self.page.open(ft.SnackBar(ft.Text("Error de sesión: No hay emprsa seleccinada"), bgcolor=ft.Colors.RED))
+                self.page.open(ft.SnackBar(
+                    ft.Text("Error de sesión: No hay emprsa seleccinada"),
+                    bgcolor=ft.Colors.RED
+                    ))
                 return
 
             def parse_date(str_date):
@@ -316,7 +379,10 @@ class EmpleadosPage(ft.Column):
                 fecha_nacimiento = parse_date(self.txt_nacimiento.value)
                 fecha_ingreso = parse_date(self.txt_ingreso.value)
             except ValueError:
-                self.page.open(ft.SnackBar(ft.Text("Error en fechas: Use formato DD/MM/AAAA"), bgcolor=ft.Colors.RED))
+                self.page.open(ft.SnackBar(
+                    ft.Text("Error en fechas: Use formato DD/MM/AAAA"),
+                    bgcolor=ft.Colors.RED
+                    ))
                 return
 
             datos_empleado = {
@@ -331,7 +397,7 @@ class EmpleadosPage(ft.Column):
                     "fecha_ingreso": fecha_ingreso,
                     "fecha_egreso": None,
                     "sueldo": float(self.txt_sueldo.value or 0),
-                    "categoria": self.txt_categoria.value,
+                    "categoria_id": int(self.dd_categoria.value) if self.dd_categoria.value else None,
                     "obra_social": self.txt_obra_social.value,
                     "calle": self.txt_calle.value,
                     "numero": self.txt_numero.value,
@@ -361,7 +427,38 @@ class EmpleadosPage(ft.Column):
             await self.cargar_datos()
         
         except ValidationError as ve:
-            self.page.open(ft.SnackBar(ft.Text(f"Error validación: {ve}"), bgcolor=ft.Colors.RED))
+            mapa_errores = {
+                    "nombre": self.txt_nombre,
+                    "apellido": self.txt_apellido,
+                    "cuil": self.txt_cuil,
+                    "sexo": self.dd_sexo,
+                    "nacionalidad": self.txt_nacionalidad,
+                    "fecha_nacimiento": self.txt_nacimiento,
+                    "numero_legajo": self.txt_legajo,
+                    "fecha_ingreso": self.txt_ingreso,
+                    "sueldo": self.txt_sueldo,
+                    "categoria_rel": self.dd_categoria,
+                    "obra_social": self.txt_obra_social,
+                    "calle": self.txt_calle,
+                    "numero": self.txt_numero,
+                    "piso": self.txt_piso,
+                    "depto": self.txt_depto,
+                    "localidad": self.txt_localidad,
+                    "provincia": self.txt_provincia,
+                    "codigo_postal": self.txt_codigo_postal,
+                    "telefono": self.txt_telefono,
+                    }
+
+            errores = ve.errors()
+            for error in errores:
+                nombre_campo = error["loc"][0]
+                mensaje = error["msg"]
+
+                if nombre_campo in mapa_errores:
+                    input_flet = mapa_errores[nombre_campo]
+                    input_flet.error_text = mensaje
+                    input_flet.update()
+
         except Exception as ex:
             self.page.open(ft.SnackBar(ft.Text(f"Error: {ex}"), bgcolor=ft.Colors.RED))
 
@@ -371,37 +468,50 @@ class EmpleadosPage(ft.Column):
         
     async def boton_editar_click(self, e):
         self.id_empleado_editar = e.control.data
+
         self.dialogo.title = ft.Text("Editar Legajo")
         self.txt_empresa.value = self.page.session.get("empresa_seleccionada_nombre")
+        id_empresa = self.page.session.get("empresa_seleccionada_id")
 
-        async for session in get_db():
-            repositorio = EmpleadoRepository(session)
-            empleado = await repositorio.get_by_id(self.id_empleado_editar)
-            if empleado:
-                    self.txt_nombre.value = empleado.nombre
-                    self.txt_apellido.value = empleado.apellido
-                    self.txt_cuil.value = empleado.cuil
-                    self.dd_sexo.value = empleado.sexo
-                    self.txt_nacionalidad.value = empleado.nacionalidad
-                    self.txt_nacimiento.value = empleado.fecha_nacimiento.strftime("%d/%m/%Y") if empleado.fecha_nacimiento else ""
+        self.loading.visible = True
+        self.update()
 
-                    self.txt_legajo.value = empleado.numero_legajo
-                    self.txt_ingreso.value = empleado.fecha_ingreso.strftime("%d/%m/%Y") if empleado.fecha_ingreso else ""
-                    self.txt_sueldo.value = empleado.sueldo
-                    self.txt_categoria.value = empleado.categoria
-                    self.txt_obra_social.value = empleado.obra_social
+        try:
+            async for session in get_db():
+                await self._cargar_opciones_categorias(session, id_empresa)
 
-                    self.txt_calle.value = empleado.calle
-                    self.txt_numero.value = empleado.numero
-                    self.txt_piso.value = empleado.piso or ""
-                    self.txt_depto.value = empleado.depto or ""
-                    self.txt_localidad.value = empleado.localidad
-                    self.txt_provincia.value = empleado.provincia
-                    self.txt_codigo_postal.value = empleado.codigo_postal
-                    self.txt_telefono.value = empleado.telefono or ""
+                repositorio = EmpleadoRepository(session)
+                empleado = await repositorio.get_para_edicion(self.id_empleado_editar)
+                if empleado:
+                        self.txt_nombre.value = empleado.nombre
+                        self.txt_apellido.value = empleado.apellido
+                        self.txt_cuil.value = empleado.cuil
+                        self.dd_sexo.value = empleado.sexo
+                        self.txt_nacionalidad.value = empleado.nacionalidad
+                        self.txt_nacimiento.value = empleado.fecha_nacimiento.strftime("%d/%m/%Y") if empleado.fecha_nacimiento else ""
 
-                    self.page.open(self.dialogo)
-                    self.page.update()
+                        self.txt_legajo.value = empleado.numero_legajo
+                        self.txt_ingreso.value = empleado.fecha_ingreso.strftime("%d/%m/%Y") if empleado.fecha_ingreso else ""
+                        self.txt_sueldo.value = str(empleado.sueldo)
+                        self.dd_categoria.value = str(empleado.categoria_rel.id)
+                        self.txt_obra_social.value = empleado.obra_social
+
+                        self.txt_calle.value = empleado.calle
+                        self.txt_numero.value = empleado.numero
+                        self.txt_piso.value = empleado.piso or ""
+                        self.txt_depto.value = empleado.depto or ""
+                        self.txt_localidad.value = empleado.localidad
+                        self.txt_provincia.value = empleado.provincia
+                        self.txt_codigo_postal.value = empleado.codigo_postal
+                        self.txt_telefono.value = empleado.telefono or ""
+
+                        self.page.open(self.dialogo)
+                        self.page.update()
+        except Exception as ex:
+            self.page.open(ft.SnackBar(ft.Text(f"Error: {ex}"), bgcolor=ft.Colors.RED))
+        finally:
+            self.loading.visible = False
+            self.update()
 
     async def boton_borrar_click(self, e):
         self.id_empleado_baja = e.control.data
@@ -455,7 +565,7 @@ class EmpleadosPage(ft.Column):
         inputs = [
             self.txt_nombre, self.txt_apellido, self.txt_cuil, self.dd_sexo,
             self.txt_nacionalidad, self.txt_nacimiento, self.txt_legajo, self.txt_ingreso,
-            self.txt_sueldo, self.txt_categoria, self.txt_obra_social, self.txt_calle,
+            self.txt_sueldo, self.dd_categoria, self.txt_obra_social, self.txt_calle,
             self.txt_numero, self.txt_piso, self.txt_depto, self.txt_localidad,
             self.txt_provincia, self.txt_codigo_postal, self.txt_telefono, self.txt_mail,
                 ]
@@ -467,9 +577,10 @@ class EmpleadosPage(ft.Column):
         inputs = [
             self.txt_nombre, self.txt_apellido, self.txt_cuil, self.dd_sexo,
             self.txt_nacionalidad, self.txt_nacimiento, self.txt_legajo, self.txt_ingreso,
-            self.txt_sueldo, self.txt_categoria, self.txt_obra_social, self.txt_calle,
+            self.txt_sueldo, self.dd_categoria, self.txt_obra_social, self.txt_calle,
             self.txt_numero, self.txt_piso, self.txt_depto, self.txt_localidad,
             self.txt_provincia, self.txt_codigo_postal, self.txt_telefono, self.txt_mail,
                 ]
         for control in inputs:
             control.error_text = None
+            control.update()

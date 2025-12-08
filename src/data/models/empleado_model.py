@@ -26,7 +26,8 @@ class Empleado(Base):
     fecha_ingreso: Mapped[date] = mapped_column(Date, nullable=False)
     fecha_egreso: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
     sueldo: Mapped[float] = mapped_column(Float, nullable=False)
-    categoria: Mapped[str] = mapped_column(String(100), nullable=False)
+    categoria_id: Mapped[int] = mapped_column(ForeignKey("categorias.id"), nullable=False)
+    categoria_rel: Mapped["Categoria"] = relationship(back_populates="empleados")
     obra_social: Mapped[str] = mapped_column(String(100), nullable=False)
 
     # --- DOMICILIO ---

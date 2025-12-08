@@ -1,5 +1,5 @@
 from sqlalchemy import select
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import joinedload, selectinload
 from src.data.repositories.base_repository import BaseRepository
 from src.data.models.empleado_model import Empleado
 from src.domain.schemas.empleado_schema import EmpleadoCreate, EmpleadoUpdate
@@ -36,7 +36,19 @@ class EmpleadoRepository(BaseRepository[Empleado]):
 
     async def get_by_empresa(self, empresa_id: int):
         """Método personalizado: Obtener empleados de una empresa específica"""
-        result = await self.session.execute(
-                select(Empleado).where(Empleado.empresa_id == empresa_id)
+        stmt = (
+                select(Empleado)
+                .options(selectinload(Empleado.categoria_rel))
+                .where(Empleado.empresa_id == empresa_id)
                 )
+
+        result = await self.session.execute(stmt)
         return result.scalars().all()
+
+    async def get_para_edicion(self, id_empleado: int) -> Empleado | None:
+        return await self.get_by_id(
+                id_empleado,
+                options=[
+                    selectinload(Empleado.categoria_rel),
+                    ]
+                )

@@ -1,6 +1,7 @@
 from typing import Generic, TypeVar, Type, Optional, Sequence
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import interfaces
 from src.core.database import Base
 
 ModelType = TypeVar("ModelType", bound=Base)
@@ -21,12 +22,18 @@ class BaseRepository(Generic[ModelType]):
         result = await self.session.execute(select(self.model))
         return result.scalars().all()
 
-    async def get_by_id(self, id: int) -> Optional[ModelType]:
+    async def get_by_id(
+            self,
+            id: int,
+            options: Optional[Sequence[interfaces.MapperOption]] = None
+            ) -> Optional[ModelType]:
         """Busca por ID"""
-        # Ejecuta: SELECT * FROM tabla WHERE id = :id
-        result = await self.session.execute(
-                select(self.model).where(self.model.id == id)
-                )
+        query = select(self.model).where(self.model.id == id)
+
+        if options:
+            query = query.options(*options)
+
+        result = await self.session.execute(query)
         return result.scalars().first()
 
     async def delete(self, id: int) -> bool:

@@ -31,7 +31,7 @@ class GestorLegajosService:
                 "empleado_nombre": empleado.nombre,
                 "empleado_apellido": empleado.apellido,
                 "empleado_dni": empleado.dni,
-                "empleado_categoria": empleado.categoria,
+                "empleado_categoria": empleado.categoria_rel.nombre,
                 "empleado_ingreso": empleado.fecha_ingreso.strftime("%d/%m/%Y"),
                 "empleado_sueldo": f"{empleado.sueldo:,.2f}"
                 }

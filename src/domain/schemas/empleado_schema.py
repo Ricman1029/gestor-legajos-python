@@ -5,28 +5,28 @@ from pydantic import BaseModel, Field, ConfigDict, field_validator
 class EmpleadoBase(BaseModel):
     nombre: str = Field(..., min_length=2)
     apellido: str = Field(..., min_length=2)
-    dni: str
-    cuil: str
-    sexo: str
-    nacionalidad: str
+    dni: str = Field(..., min_length=2)
+    cuil: str = Field(..., min_length=2)
+    sexo: str = Field(..., min_length=2)
+    nacionalidad: str = Field(..., min_length=2)
     fecha_nacimiento: date
 
     # Laborales
-    numero_legajo: str
+    numero_legajo: str = Field(..., min_length=1)
     fecha_ingreso: date
     fecha_egreso: Optional[date] = None
     sueldo: float = Field(..., gt=0)
-    categoria: str
-    obra_social: str
+    categoria_id: int = Field(..., gt=0)
+    obra_social: str = Field(..., min_length=2)
     
     # Domicilio
-    calle: str
-    numero: str
+    calle: str = Field(..., min_length=2)
+    numero: str = Field(..., min_length=2)
     piso: Optional[str] = None
     depto: Optional[str] = None
-    localidad: str
-    provincia: str
-    codigo_postal: str
+    localidad: str = Field(..., min_length=2)
+    provincia: str = Field(..., min_length=2)
+    codigo_postal: str = Field(..., min_length=2)
     telefono: Optional[str]
 
     @field_validator("dni")
@@ -65,7 +65,7 @@ class EmpleadoUpdate(BaseModel):
     fecha_ingreso: Optional[date] = None
     fecha_egreso: Optional[date] = None
     sueldo: Optional[float] = None
-    categoria: Optional[str] = None
+    categoria_id: Optional[int] = None
     obra_social: Optional[str] = None
     
     # Domicilio

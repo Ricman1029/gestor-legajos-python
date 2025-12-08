@@ -20,7 +20,7 @@ class EmpresaBase(BaseModel):
     razon_social: str = Field(..., min_length=2, max_length=100)
     cuit: str
     numero_ieric: Optional[str] = None
-    convenio: str
+    convenio_id: int = Field(..., gt=0, description="ID del Convenio seleccionado")
 
     # Ubicación
     calle: str = Field(..., min_length=2)
@@ -52,7 +52,7 @@ class EmpresaUpdate(BaseModel):
     """
     razon_social: Optional[str] = None
     cuit: Optional[str] = None
-    convenio: Optional[str] = None
+    convenio_id: Optional[int] = None
     calle: Optional[str] = None
     numero: Optional[str] = None
     localidad: Optional[str] = None
@@ -70,7 +70,7 @@ class EmpresaUpdate(BaseModel):
         return _validar_cuit_logica(v)
 
     # --- VALIDACIONES DE NEGOCIO ---
-    @field_validator("razon_social", "convenio", "calle", "numero", "localidad", "provincia", "codigo_postal")
+    @field_validator("razon_social", "numero", "localidad", "provincia", "codigo_postal")
     @classmethod
     def validar_cuit(cls, v: Optional[str], info) -> Optional[str]:
         if v is None:

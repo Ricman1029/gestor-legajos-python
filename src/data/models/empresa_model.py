@@ -1,5 +1,5 @@
 from typing import List, Optional
-from sqlalchemy import String, Integer
+from sqlalchemy import String, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from src.core.database import Base
 
@@ -16,7 +16,8 @@ class Empresa(Base):
     razon_social: Mapped[str] = mapped_column(String(100), nullable=False, unique=True)
     cuit: Mapped[str] = mapped_column(String(20), nullable=False, unique=True)
     numero_ieric: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
-    convenio: Mapped[str] = mapped_column(String(100), nullable=False)
+    convenio_id: Mapped[int] = mapped_column(ForeignKey("convenios.id"), nullable=False)
+    convenio_rel: Mapped["Convenio"] = relationship(back_populates="empresas")
 
     # --- UBICACIÓN ---
     calle: Mapped[str] = mapped_column(String(100), nullable=False)

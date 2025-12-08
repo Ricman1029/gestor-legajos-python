@@ -2,6 +2,7 @@ import flet as ft
 from pydantic import ValidationError
 from src.core.database import get_db
 from src.data.repositories.empresa_repository import EmpresaRepository
+from src.data.repositories.parametricos_repository import ConvenioRepository
 from src.domain.schemas.empresa_schema import EmpresaCreate, EmpresaUpdate
 from src.ui.components.empresa_card import EmpresaCard
 
@@ -18,7 +19,7 @@ class EmpresasPage(ft.Column):
         # --- REFERENCIAS A INPUTS ---
         self.txt_razon_social = ft.TextField(label="Razón Social", expand=True)
         self.txt_cuit = ft.TextField(label="CUIT (sólo números)",max_length=11, expand=True)
-        self.txt_convenio = ft.TextField(label="Convenio", expand=True)
+        self.dd_convenio = ft.Dropdown(label="Convenio", expand=True)
 
         # Ubicación
         self.txt_calle = ft.TextField(label="Calle", expand=True)
@@ -54,7 +55,7 @@ class EmpresasPage(ft.Column):
                     controls=[
                         ft.Text("Datos Fiscales", weight=ft.FontWeight.BOLD),
                         ft.Row([self.txt_razon_social, self.txt_cuit]),
-                        self.txt_convenio,
+                        self.dd_convenio,
                         ft.Divider(),
                         ft.Text("Ubicación", weight=ft.FontWeight.BOLD),
                         ft.Row([self.txt_calle, self.txt_numero]),
@@ -156,12 +157,22 @@ class EmpresasPage(ft.Column):
             self.loading.visible = False
             self.update()
 
+    async def _cargar_convenios(self):
+        self.dd_convenio.options.clear()
+        async for session in get_db():
+            repositorio = ConvenioRepository(session)
+            convenios = await repositorio.get_all()
+            for convenio in convenios:
+                self.dd_convenio.options.append(ft.dropdown.Option(str(convenio.id), convenio.nombre))
+
     # --- LÓGICA DEL FORMULARIO ---
     async def abrir_dialogo_crear(self, e):
         self.id_empresa_editar = None
         self.dialogo.title = ft.Text("Nueva Empresa")
 
         self._limpiar_controles_dialogo()
+
+        await self._cargar_convenios()
 
         # 3. Abrir diálogo
         self.page.open(self.dialogo)
@@ -176,59 +187,34 @@ class EmpresasPage(ft.Column):
         self.dialogo.update()
 
         try:
-            # Si tenemos un id_empresa_editar, estamos editando
-            if self.id_empresa_editar:
-                update_schema = EmpresaUpdate(
-                        razon_social=self.txt_razon_social.value,
-                        cuit=self.txt_cuit.value,
-                        convenio=self.txt_convenio.value,
-                        calle=self.txt_calle.value,
-                        numero=self.txt_numero.value,
-                        piso=self.txt_piso.value,
-                        depto=self.txt_depto.value,
-                        localidad=self.txt_localidad.value,
-                        provincia=self.txt_provincia.value,
-                        codigo_postal=self.txt_codigo_postal.value,
-                        telefono=self.txt_telefono.value,
-                        mail=self.txt_mail.value,
-                        )
+            # Pydantic espera un id mayor a 0, sino se seleccionó ningún convenio mandamos cero para detectar el error
+            convenio_id = int(self.dd_convenio.value) if self.dd_convenio.value else 0
 
-                async for session in get_db():
-                    repositorio = EmpresaRepository(session)
-                    await repositorio.update(self.id_empresa_editar, update_schema)
+            datos = {
+                    "razon_social": self.txt_razon_social.value,
+                    "cuit": self.txt_cuit.value,
+                    "convenio_id": convenio_id,
+                    "calle": self.txt_calle.value,
+                    "numero": self.txt_numero.value,
+                    "piso": self.txt_piso.value,
+                    "depto": self.txt_depto.value,
+                    "localidad": self.txt_localidad.value,
+                    "provincia": self.txt_provincia.value,
+                    "codigo_postal": self.txt_codigo_postal.value,
+                    "telefono": self.txt_telefono.value,
+                    "mail": self.txt_mail.value,
+                    }
 
-                mensaje = "Empresa actualizada correctamente"
-
-            else:
-                # Creamos un DTO (Data Transfer Object)
-                # Pydantic va a validar longitudes, CUIT válido, etc.
-                nueva_empresa_schema = EmpresaCreate(
-                        razon_social=self.txt_razon_social.value,
-                        cuit=self.txt_cuit.value,
-                        convenio=self.txt_convenio.value,
-                        calle=self.txt_calle.value,
-                        numero=self.txt_numero.value,
-                        piso=self.txt_piso.value,
-                        depto=self.txt_depto.value,
-                        localidad=self.txt_localidad.value,
-                        provincia=self.txt_provincia.value,
-                        codigo_postal=self.txt_codigo_postal.value,
-                        telefono=self.txt_telefono.value,
-                        mail=self.txt_mail.value,
-                        )
-
-                async for session in get_db():
-                    repositorio = EmpresaRepository(session)
-                    await repositorio.create(nueva_empresa_schema)
-
-                mensaje = "Empresa creada exitosamente"
+            async for session in get_db():
+                repositorio = EmpresaRepository(session)
+                if self.id_empresa_editar:
+                    await repositorio.update(self.id_empresa_editar, EmpresaUpdate(**datos))
+                else:
+                    await repositorio.create(EmpresaCreate(**datos))
 
             # Cerramos el diálogo
             self.page.close(self.dialogo)
-            self.update()
-
-            # Recargamos la Grid
-            self.page.open(ft.SnackBar(ft.Text(mensaje), bgcolor=ft.Colors.GREEN))
+            self.page.open(ft.SnackBar(ft.Text("Empresa guardada"), bgcolor=ft.Colors.GREEN))
             await self.cargar_datos()
 
         except ValidationError as ve:
@@ -236,7 +222,7 @@ class EmpresasPage(ft.Column):
             mapa_errores = {
                     "razon_social": self.txt_razon_social,
                     "cuit": self.txt_cuit,
-                    "convenio": self.txt_convenio,
+                    "convenio_id": self.dd_convenio,
                     "calle": self.txt_calle,
                     "numero": self.txt_numero,
                     "piso": self.txt_piso,
@@ -281,11 +267,13 @@ class EmpresasPage(ft.Column):
 
             async for session in get_db():
                 repositorio = EmpresaRepository(session)
-                empresa = await repositorio.get_by_id(id_empresa)
+                empresa = await repositorio.get_para_edicion(id_empresa)
 
                 if not empresa:
                     self.mostrar_error("No se encontró las empresa")
                     return
+
+                await self._cargar_convenios()
 
                 # Llenamos los inputs con los datos de la DB
                 self.id_empresa_editar = id_empresa
@@ -293,7 +281,7 @@ class EmpresasPage(ft.Column):
 
                 self.txt_razon_social.value = empresa.razon_social
                 self.txt_cuit.value = empresa.cuit
-                self.txt_convenio.value = empresa.convenio
+                self.dd_convenio.value = str(empresa.convenio_rel.id)
                 self.txt_calle.value = empresa.calle
                 self.txt_numero.value = empresa.numero
                 self.txt_piso.value = empresa.piso
@@ -306,7 +294,7 @@ class EmpresasPage(ft.Column):
 
                 # Limpiamos errores previos
                 todos_los_inputs = [
-                    self.txt_razon_social, self.txt_cuit, self.txt_convenio,
+                    self.txt_razon_social, self.txt_cuit, self.dd_convenio,
                     self.txt_calle, self.txt_numero, self.txt_piso,
                     self.txt_depto, self.txt_localidad, self.txt_provincia,
                     self.txt_codigo_postal, self.txt_telefono, self.txt_mail,
@@ -362,7 +350,7 @@ class EmpresasPage(ft.Column):
     def _limpiar_controles_dialogo(self):
         # 1. Limpiar campos anteriores
         todos_los_inputs = [
-            self.txt_razon_social, self.txt_cuit, self.txt_convenio,
+            self.txt_razon_social, self.txt_cuit, self.dd_convenio,
             self.txt_calle, self.txt_numero, self.txt_piso,
             self.txt_depto, self.txt_localidad, self.txt_provincia,
             self.txt_codigo_postal, self.txt_telefono, self.txt_mail,
@@ -376,7 +364,7 @@ class EmpresasPage(ft.Column):
     def _quitar_errores_controles_dialogo(self):
         # 1. Limpiar campos anteriores
         todos_los_inputs = [
-            self.txt_razon_social, self.txt_cuit, self.txt_convenio,
+            self.txt_razon_social, self.txt_cuit, self.dd_convenio,
             self.txt_calle, self.txt_numero, self.txt_piso,
             self.txt_depto, self.txt_localidad, self.txt_provincia,
             self.txt_codigo_postal, self.txt_telefono, self.txt_mail,
