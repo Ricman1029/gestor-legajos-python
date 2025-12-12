@@ -3,14 +3,9 @@ import json
 import logging
 from pathlib import Path
 from uuid import uuid4
+from src.core.config import BASE_DIR, TEMPLATES_DIR, OUTPUT_DIR
 
-# Definimos rutas
-BASE_DIR = Path(__file__).resolve().parents[3]
-TEMPLATE_PATH = BASE_DIR / "assets" / "templates" / "contrato_base.typ"
-OUTPUT_DIR = BASE_DIR / "output_pdfs"
-
-# Creamos carpeta de salida si no existe
-OUTPUT_DIR.mkdir(exist_ok=True)
+TEMPLATE_PATH = TEMPLATES_DIR / "generador_legajo.typ"
 
 class PdfService:
     @staticmethod
@@ -28,7 +23,7 @@ class PdfService:
             unique_id = uuid4().hex[:8]
             json_filename = f"temp_{nombre_base}_{unique_id}.json"
             typ_filenmae = f"temp_{nombre_base}_{unique_id}.typ"
-            pdf_filename = f"{nombre_base}.pdf"
+            pdf_filename = f"legajo_{nombre_base}.pdf"
 
             json_path = OUTPUT_DIR / json_filename
             typ_path = OUTPUT_DIR / typ_filenmae
@@ -52,7 +47,7 @@ class PdfService:
 
             # 6. Compilar
             logging.info(f"Compilando Typst: {typ_path} -> {pdf_path}")
-            typst.compile(str(typ_path), output=str(pdf_path))
+            typst.compile(str(typ_path), output=str(pdf_path), root=str(BASE_DIR))
 
             # 7. Limpiamos los archivos temporales
             json_path.unlink()

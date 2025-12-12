@@ -10,7 +10,7 @@
   fill: luma(30),
 )
 
-#let datos = json("temp_datos.json")
+#let datos = json("/storage/temp/temp_datos.json")
 
 #pagina_ficha_legajo(datos)
 
