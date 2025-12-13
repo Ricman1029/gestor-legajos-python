@@ -29,7 +29,8 @@ class Empleado(Base):
     sueldo: Mapped[float] = mapped_column(Float, nullable=False)
     categoria_id: Mapped[int] = mapped_column(ForeignKey("categorias.id"), nullable=False)
     categoria_rel: Mapped["Categoria"] = relationship(back_populates="empleados")
-    obra_social: Mapped[str] = mapped_column(String(100), nullable=False)
+    obra_social_id: Mapped[int] = mapped_column(ForeignKey("obras_sociales.id"), nullable=False)
+    obra_social_rel: Mapped["ObraSocial"] = relationship(back_populates="empleados")
 
     # --- DOMICILIO ---
     calle: Mapped[str] = mapped_column(String(100), nullable=False)

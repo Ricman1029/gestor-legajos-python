@@ -70,3 +70,15 @@ class Art(Base):
 
     def __repr__(self):
         return self.nombre
+
+class ObraSocial(Base):
+    __tablename__ = "obras_sociales"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    nombre: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
+    codigo: Mapped[Optional[str]] = mapped_column(String(20), nullable=False)
+
+    empleados: Mapped[List["Empleado"]] = relationship(back_populates="obra_social_rel")
+
+    def __repr__(self):
+        return self.nombre

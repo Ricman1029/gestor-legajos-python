@@ -1,5 +1,6 @@
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload, selectinload
+from src.data.models.parametricos_model import Categoria
 from src.data.repositories.base_repository import BaseRepository
 from src.data.models.empleado_model import Empleado
 from src.domain.schemas.empleado_schema import EmpleadoCreate, EmpleadoUpdate
@@ -38,7 +39,10 @@ class EmpleadoRepository(BaseRepository[Empleado]):
         """Método personalizado: Obtener empleados de una empresa específica"""
         stmt = (
                 select(Empleado)
-                .options(selectinload(Empleado.categoria_rel))
+                .options(
+                    selectinload(Empleado.categoria_rel),
+                    selectinload(Empleado.obra_social_rel)
+                    )
                 .where(Empleado.empresa_id == empresa_id)
                 )
 
@@ -49,6 +53,7 @@ class EmpleadoRepository(BaseRepository[Empleado]):
         return await self.get_by_id(
                 id_empleado,
                 options=[
-                    selectinload(Empleado.categoria_rel),
+                    selectinload(Empleado.categoria_rel).selectinload(Categoria.convenio),
+                    selectinload(Empleado.obra_social_rel)
                     ]
                 )

@@ -18,8 +18,8 @@ class EmpleadoBase(BaseModel):
     fecha_ingreso: date
     fecha_egreso: Optional[date] = None
     sueldo: float = Field(..., gt=0)
-    categoria_id: int = Field(..., gt=0)
-    obra_social: str = Field(..., min_length=2)
+    categoria_id: int = Field(..., gt=0, description="ID de la Categoria")
+    obra_social_id: int = Field(..., gt=0, description="ID de la Obra Social")
     
     # Domicilio
     calle: str = Field(..., min_length=2)

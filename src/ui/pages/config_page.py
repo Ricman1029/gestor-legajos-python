@@ -1,10 +1,9 @@
 import flet as ft
 from sqlalchemy.exc import IntegrityError
-from domain.schemas.parametricos_schema import ArtCreate, CategoriaCreate, ConvenioCreate, SindicatoCreate
 from src.core.database import get_db
-from src.data.models.parametricos_model import Convenio, Categoria
+from src.domain.schemas.parametricos_schema import ArtCreate, CategoriaCreate, ConvenioCreate, SindicatoCreate, ObraSocialCreate
 from src.data.repositories.parametricos_repository import (
-        SindicatoRepository, ConvenioRepository, CategoriaRepository, ArtRepository
+        SindicatoRepository, ConvenioRepository, CategoriaRepository, ArtRepository, ObraSocialRepository, 
         )
 
 class ConfigPage(ft.Column):
@@ -24,7 +23,7 @@ class ConfigPage(ft.Column):
                 self.lista_sindicatos, 
                 )
 
-        self.txt_convenio = ft.TextField(label="Nuevo Convenio", expand=True, height=40)
+        self.txt_convenio = ft.TextField(label="Nuevo Convenio", expand=True, height=40, disabled=True)
         self.lista_convenios = ft.ListView(expand=True, spacing=10)
         self.columna_convenios = self._build_column(
                 "2. Convenios", 
@@ -47,9 +46,10 @@ class ConfigPage(ft.Column):
         self.lista_arts = ft.ListView(expand=True, spacing=5, padding=5)
 
         self.panel_art = ft.Container(
+                expand=True,
                 padding=20, 
                 content=ft.Column([
-                    ft.Text("gestión de Aseguradoras de Riesgos del Trabajo (ART)", size=20, weight=ft.FontWeight.BOLD),
+                    ft.Text("Gestión de Aseguradoras de Riesgos del Trabajo (ART)", size=20, weight=ft.FontWeight.BOLD),
                     ft.Row([
                         self.txt_art_nombre,
                         self.txt_art_telefono,
@@ -58,6 +58,30 @@ class ConfigPage(ft.Column):
                     ft.Divider(),
                     ft.Container(
                         content=self.lista_arts,
+                        border=ft.border.all(1, ft.Colors.GREY_300),
+                        border_radius=8,
+                        expand=True
+                        )
+                    ])
+                )
+
+        self.txt_obra_social_nombre = ft.TextField(label="Nombre Obra Social", expand=True)
+        self.txt_obra_social_codigo = ft.TextField(label="Código Obra Social", expand=True)
+        self.lista_obras_sociales = ft.ListView(expand=True, spacing=5, padding=5)
+
+        self.panel_obra_social = ft.Container(
+                expand=True,
+                padding=20, 
+                content=ft.Column([
+                    ft.Text("Gestión de Obras Sociales (OS)", size=20, weight=ft.FontWeight.BOLD),
+                    ft.Row([
+                        self.txt_obra_social_nombre,
+                        self.txt_obra_social_codigo,
+                        ft.IconButton(icon=ft.Icons.ADD_CIRCLE, icon_color=ft.Colors.GREEN, icon_size=40, on_click=self.agregar_obra_social)
+                        ]),
+                    ft.Divider(),
+                    ft.Container(
+                        content=self.lista_obras_sociales,
                         border=ft.border.all(1, ft.Colors.GREY_300),
                         border_radius=8,
                         expand=True
@@ -86,7 +110,14 @@ class ConfigPage(ft.Column):
                     ft.Tab(
                         text="Aseguradoras (ART)",
                         icon=ft.Icons.MEDICAL_SERVICES,
-                        content=self.panel_art
+                        content=ft.Container(
+                            padding=10,
+                            content=ft.Row([
+                                self.panel_obra_social,
+                                ft.VerticalDivider(width=1, color=ft.Colors.GREY_300),
+                                self.panel_art
+                                ], expand=True)
+                            )
                         ),
                     ],
                 expand=True
@@ -116,6 +147,7 @@ class ConfigPage(ft.Column):
     def did_mount(self):
         self.page.run_task(self.cargar_sindicatos)
         self.page.run_task(self.cargar_arts)
+        self.page.run_task(self.cargar_obras_sociales)
 
     async def cargar_sindicatos(self):
         self.lista_sindicatos.controls.clear()
@@ -198,6 +230,29 @@ class ConfigPage(ft.Column):
                                 icon_color=ft.Colors.RED,
                                 data=art.id,
                                 on_click=self.borrar_art
+                                )
+                            )
+                        )
+        self.update()
+
+    async def cargar_obras_sociales(self):
+        self.lista_obras_sociales.controls.clear()
+
+        async for session in get_db():
+            repositorio = ObraSocialRepository(session)
+            obras_sociales = await repositorio.get_all()
+
+            for obra_social in obras_sociales:
+                self.lista_obras_sociales.controls.append(
+                        ft.ListTile(
+                            title=ft.Text(obra_social.nombre, weight=ft.FontWeight.BOLD),
+                            subtitle=ft.Text(f"Código: {obra_social.codigo}"),
+                            leading=ft.Icon(ft.Icons.LOCAL_HOSPITAL, color=ft.Colors.RED),
+                            trailing=ft.IconButton(
+                                icon=ft.Icons.DELETE,
+                                icon_color=ft.Colors.RED,
+                                data=obra_social.id,
+                                on_click=self.borrar_obra_social
                                 )
                             )
                         )
@@ -299,7 +354,28 @@ class ConfigPage(ft.Column):
             self.txt_art_nombre.value = ""
             self.txt_art_telefono.value = ""
             await self.cargar_arts()
-            self._mostrar_mensaje("Arte agregada", ft.Colors.GREEN)
+            self._mostrar_mensaje("Art agregada", ft.Colors.GREEN)
+            
+        except Exception as ex:
+            self._mostrar_mensaje(f"Error: {ex}", ft.Colors.RED)
+
+    async def agregar_obra_social(self, e):
+        if not self.txt_obra_social_nombre.value: return
+        if not self.txt_obra_social_codigo.value: return
+
+        try:
+            async for session in get_db():
+                repositorio = ObraSocialRepository(session)
+                obra_social = ObraSocialCreate(
+                        nombre=self.txt_obra_social_nombre.value,
+                        codigo=int(self.txt_obra_social_codigo.value)
+                        )
+                await repositorio.create(obra_social)
+
+            self.txt_obra_social_nombre.value = ""
+            self.txt_obra_social_codigo.value = ""
+            await self.cargar_obras_sociales()
+            self._mostrar_mensaje("Obra Social agregada", ft.Colors.GREEN)
             
         except Exception as ex:
             self._mostrar_mensaje(f"Error: {ex}", ft.Colors.RED)
@@ -336,6 +412,13 @@ class ConfigPage(ft.Column):
                 e.control.data,
                 ArtRepository,
                 self.cargar_arts
+                )
+
+    async def borrar_obra_social(self, e):
+        await self._borrar_generico(
+                e.control.data,
+                ObraSocialRepository,
+                self.cargar_obras_sociales
                 )
 
     async def _borrar_generico(self, id_borrar, RepositorioClase, funcion_cargar):

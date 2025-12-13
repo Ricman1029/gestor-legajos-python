@@ -1,8 +1,8 @@
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload, selectinload
-from domain.schemas.parametricos_schema import ArtCreate, CategoriaCreate, ConvenioCreate, SindicatoCreate
+from domain.schemas.parametricos_schema import ArtCreate, CategoriaCreate, ConvenioCreate, ObraSocialCreate, SindicatoCreate
 from src.data.repositories.base_repository import BaseRepository
-from src.data.models.parametricos_model import Convenio, Categoria, Art, Sindicato
+from src.data.models.parametricos_model import Convenio, Categoria, Art, ObraSocial, Sindicato
 
 class SindicatoRepository(BaseRepository[Sindicato]):
     def __init__(self, session):
@@ -58,3 +58,14 @@ class ArtRepository(BaseRepository[Art]):
         await self.session.commit()
         await self.session.refresh(db_art)
         return db_art
+
+class ObraSocialRepository(BaseRepository[ObraSocial]):
+    def __init__(self, session):
+        super().__init__(session, ObraSocial)
+
+    async def create(self, obra_social: ObraSocialCreate) -> ObraSocial:
+        db_obra_social = ObraSocial(**obra_social.model_dump())
+        self.session.add(db_obra_social)
+        await self.session.commit()
+        await self.session.refresh(db_obra_social)
+        return db_obra_social

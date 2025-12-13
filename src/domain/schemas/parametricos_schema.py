@@ -45,3 +45,14 @@ class CategoriaCreate(CategoriaBase):
 class CategoriaSchema(CategoriaBase):
     id: int
     model_config = ConfigDict(from_attributes=True)
+
+class ObraSocialBase(BaseModel):
+    nombre: str = Field(..., min_length=2)
+    codigo: int = Field(..., gt=0)
+
+class ObraSocialCreate(ObraSocialBase):
+    pass
+
+class ObraSocialSchema(ObraSocialBase):
+    id: int
+    model_config = ConfigDict(from_attributes=True)

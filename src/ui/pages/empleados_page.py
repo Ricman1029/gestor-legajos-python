@@ -1,10 +1,11 @@
 import flet as ft
 from datetime import datetime
 from pydantic import ValidationError
-from data.repositories.empresa_repository import EmpresaRepository
-from data.repositories.parametricos_repository import CategoriaRepository
 from src.core.database import get_db
-from src.data.repositories.empleado_repository import EmpleadoRepository, EmpleadoCreate, EmpleadoUpdate
+from src.data.repositories.empresa_repository import EmpresaRepository
+from src.data.repositories.parametricos_repository import CategoriaRepository, ObraSocialRepository
+from src.data.repositories.empleado_repository import EmpleadoRepository
+from src.domain.schemas.empleado_schema import EmpleadoCreate, EmpleadoUpdate
 from src.domain.services.gestor_service import GestorLegajosService
 
 class EmpleadosPage(ft.Column):
@@ -34,7 +35,7 @@ class EmpleadosPage(ft.Column):
         self.txt_ingreso = ft.TextField(label="Fecha Ingreso (DD/MM/AAAA)", expand=True)
         self.txt_sueldo = ft.TextField(label="Sueldo", prefix_text="$ ", expand=True)
         self.dd_categoria = ft.Dropdown(label="Categoría", expand=True, disabled=True)
-        self.txt_obra_social = ft.TextField(label="Obra Social", expand=True)
+        self.dd_obra_social = ft.Dropdown(label="Obra Social", expand=True)
 
         self.dd_convenio = ft.Dropdown(
                 label="Convenio Aplicable",
@@ -83,7 +84,7 @@ class EmpleadosPage(ft.Column):
                                     ft.Text("Contratación", weight=ft.FontWeight.BOLD),
                                     ft.Row([self.txt_legajo, self.txt_ingreso]),
                                     ft.Row([self.dd_convenio, self.dd_categoria]),
-                                    ft.Row([self.txt_sueldo, self.txt_obra_social]),
+                                    ft.Row([self.txt_sueldo, self.dd_obra_social]),
                                     ], scroll=ft.ScrollMode.AUTO, spacing=15)
                                 ),
                             ft.Tab(
@@ -288,6 +289,7 @@ class EmpleadosPage(ft.Column):
 
                 if self.id_empleado_editar:
                     update_schema = EmpleadoUpdate(**self._datos_empleado())
+                    if error_ui: raise ValidationError("UI Error", [])
                     await repositorio.update(self.id_empleado_editar, update_schema)
                     mensaje = "Legajo Actualizado"
                 else:
@@ -321,8 +323,10 @@ class EmpleadosPage(ft.Column):
 
             async for session in get_db():
                 await self._cargar_convenios_empresa(session, id_empresa)
+                await self._cargar_obras_sociales(session)
 
             self.loading.visible = False
+            self.update()
 
         self.page.open(self.dialogo)
         self.page.update()
@@ -339,12 +343,17 @@ class EmpleadosPage(ft.Column):
         try:
             async for session in get_db():
                 await self._cargar_convenios_empresa(session, id_empresa)
+                await self._cargar_obras_sociales(session)
 
                 repositorio = EmpleadoRepository(session)
                 empleado = await repositorio.get_para_edicion(self.id_empleado_editar)
 
                 if empleado:
                     self._llenar_formulario_editar(empleado)
+                    await self._llenar_convenio_y_categoria(empleado, session)
+
+                self.page.open(self.dialogo)
+                self.page.update()
 
         except Exception as ex:
             self._mostrar_mensaje(f"Error: {ex}", ft.Colors.RED)
@@ -454,20 +463,14 @@ class EmpleadosPage(ft.Column):
         self.dd_categoria.value = None
         self.dd_categoria.disabled = True
 
-    # async def _cargar_opciones_categorias(self, session, id_empresa: int):
-    #     repositorio_empresa = EmpresaRepository(session)
-    #     repositorio_categoria = CategoriaRepository(session)
-    #     empresa = await repositorio_empresa.get_para_edicion(id_empresa)
-    #
-    #     opciones = []
-    #     if empresa and empresa.convenio_rel:
-    #         categorias = await repositorio_categoria.get_by_convenio(empresa.convenio_rel.id)
-    #         opciones = [
-    #                 ft.dropdown.Option(key=str(categoria.id), text=categoria.nombre)
-    #                 for categoria in categorias
-    #                 ]
-    #
-    #     self.dd_categoria.options = opciones
+    async def _cargar_obras_sociales(self, session):
+        repositorio = ObraSocialRepository(session)
+        obras_sociales = await repositorio.get_all()
+
+        opciones = [
+                ft.dropdown.Option(key=str(obra_social.id), text=obra_social.nombre) for obra_social in obras_sociales
+                ]
+        self.dd_obra_social.options = opciones
 
     def _agregar_fila_tabla(self, empleado):
         es_inactivo = empleado.fecha_egreso is not None
@@ -533,13 +536,14 @@ class EmpleadosPage(ft.Column):
                 self._mostrar_mensaje("Error en fechas: Use formato DD/MM/AAAA", ft.Colors.RED)
                 return None
 
+        dni = self.txt_cuil.value[3:11] if self.txt_cuil.value else ""
         sueldo = float(self.txt_sueldo.value) if self.txt_sueldo.value else 0.0
         categoria = int(self.dd_categoria.value) if self.dd_categoria.value else 0
 
         return {
                 "nombre": self.txt_nombre.value,
                 "apellido": self.txt_apellido.value,
-                "dni": self.txt_cuil.value[3:11],
+                "dni": dni,
                 "cuil": self.txt_cuil.value,
                 "sexo": self.dd_sexo.value or "",
                 "nacionalidad": self.txt_nacionalidad.value,
@@ -549,7 +553,7 @@ class EmpleadosPage(ft.Column):
                 "fecha_egreso": None,
                 "sueldo": sueldo,
                 "categoria_id": categoria,
-                "obra_social": self.txt_obra_social.value,
+                "obra_social_id": int(self.dd_obra_social.value) if self.dd_obra_social.value else 0,
                 "calle": self.txt_calle.value,
                 "numero": self.txt_numero.value,
                 "piso": self.txt_piso.value,
@@ -572,7 +576,7 @@ class EmpleadosPage(ft.Column):
                     "fecha_ingreso": self.txt_ingreso,
                     "sueldo": self.txt_sueldo,
                     "categoria_id": self.dd_categoria,
-                    "obra_social": self.txt_obra_social,
+                    "obra_social_id": self.dd_obra_social,
                     "calle": self.txt_calle,
                     "numero": self.txt_numero,
                     "piso": self.txt_piso,
@@ -604,8 +608,6 @@ class EmpleadosPage(ft.Column):
         self.txt_legajo.value = empleado.numero_legajo
         self.txt_ingreso.value = empleado.fecha_ingreso.strftime("%d/%m/%Y") if empleado.fecha_ingreso else ""
         self.txt_sueldo.value = str(empleado.sueldo)
-        self.dd_categoria.value = str(empleado.categoria_rel.id)
-        self.txt_obra_social.value = empleado.obra_social
 
         self.txt_calle.value = empleado.calle
         self.txt_numero.value = empleado.numero
@@ -615,16 +617,31 @@ class EmpleadosPage(ft.Column):
         self.txt_provincia.value = empleado.provincia
         self.txt_codigo_postal.value = empleado.codigo_postal
         self.txt_telefono.value = empleado.telefono or ""
+        
+        if empleado.obra_social_rel:
+            self.dd_obra_social.value = str(empleado.obra_social_rel.id)
 
         self.page.open(self.dialogo)
         self.page.update()
 
+    async def _llenar_convenio_y_categoria(self, empleado, session):
+        id_convenio_acutal = str(empleado.categoria_rel.convenio.id)
+        self.dd_convenio.value = id_convenio_acutal
+
+        repositorio_categoria = CategoriaRepository(session)
+        categorias = await repositorio_categoria.get_by_convenio(int(id_convenio_acutal))
+        self.dd_categoria.options = [
+                ft.dropdown.Option(key=str(categoria.id), text=categoria.nombre)
+                for categoria in categorias
+                ]
+        self.dd_categoria.disabled = False
+        self.dd_categoria.value = str(empleado.categoria_rel.id)
 
     def _limpiar_formulario(self):
         inputs = [
             self.txt_nombre, self.txt_apellido, self.txt_cuil, self.dd_sexo,
             self.txt_nacionalidad, self.txt_nacimiento, self.txt_legajo, self.txt_ingreso,
-            self.txt_sueldo, self.dd_categoria, self.txt_obra_social, self.txt_calle,
+            self.txt_sueldo, self.dd_categoria, self.dd_obra_social, self.txt_calle,
             self.txt_numero, self.txt_piso, self.txt_depto, self.txt_localidad,
             self.txt_provincia, self.txt_codigo_postal, self.txt_telefono, self.txt_mail,
                 ]
@@ -636,7 +653,7 @@ class EmpleadosPage(ft.Column):
         inputs = [
             self.dd_convenio, self.txt_nombre, self.txt_apellido, self.txt_cuil, self.dd_sexo,
             self.txt_nacionalidad, self.txt_nacimiento, self.txt_legajo, self.txt_ingreso,
-            self.txt_sueldo, self.dd_categoria, self.txt_obra_social, self.txt_calle,
+            self.txt_sueldo, self.dd_categoria, self.dd_obra_social, self.txt_calle,
             self.txt_numero, self.txt_piso, self.txt_depto, self.txt_localidad,
             self.txt_provincia, self.txt_codigo_postal, self.txt_telefono, self.txt_mail,
                 ]
