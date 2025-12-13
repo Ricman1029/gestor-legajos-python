@@ -3,6 +3,7 @@ from typing import Optional
 from pydantic import BaseModel, Field, ConfigDict, field_validator
 
 class EmpleadoBase(BaseModel):
+    # Personal
     nombre: str = Field(..., min_length=2)
     apellido: str = Field(..., min_length=2)
     dni: str = Field(..., min_length=2)
@@ -10,6 +11,7 @@ class EmpleadoBase(BaseModel):
     sexo: str = Field(..., min_length=2)
     nacionalidad: str = Field(..., min_length=2)
     fecha_nacimiento: date
+    estado_civil: Optional[str] = None
 
     # Laborales
     numero_legajo: str = Field(..., min_length=1)
@@ -27,7 +29,10 @@ class EmpleadoBase(BaseModel):
     localidad: str = Field(..., min_length=2)
     provincia: str = Field(..., min_length=2)
     codigo_postal: str = Field(..., min_length=2)
-    telefono: Optional[str]
+
+    # Contacto
+    telefono: Optional[str] = None
+    mail: Optional[str] = None
 
     @field_validator("dni")
     @classmethod

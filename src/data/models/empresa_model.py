@@ -1,7 +1,8 @@
 from typing import List, Optional
 from sqlalchemy import String, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from src.core.database import Base
+from src.core.database import Base 
+from src.data.models.parametricos_model import empresa_convenio_asociacion
 
 class Empresa(Base):
     """
@@ -16,8 +17,6 @@ class Empresa(Base):
     razon_social: Mapped[str] = mapped_column(String(100), nullable=False, unique=True)
     cuit: Mapped[str] = mapped_column(String(20), nullable=False, unique=True)
     numero_ieric: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
-    convenio_id: Mapped[int] = mapped_column(ForeignKey("convenios.id"), nullable=False)
-    convenio_rel: Mapped["Convenio"] = relationship(back_populates="empresas")
 
     # --- UBICACIÓN ---
     calle: Mapped[str] = mapped_column(String(100), nullable=False)
@@ -31,6 +30,15 @@ class Empresa(Base):
     # --- CONTACTO ---
     telefono: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
     mail: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+
+    # --- ART ---
+    art_id: Mapped[int] = mapped_column(ForeignKey("arts.id"), nullable=False)
+    art_rel: Mapped["Art"] = relationship(back_populates="empresas")
+
+    convenios: Mapped[List["Convenio"]] = relationship(
+            secondary=empresa_convenio_asociacion,
+            back_populates="empresas"
+            )
 
     empleados: Mapped[List["Empleado"]] = relationship(
             back_populates="empresa",

@@ -2,7 +2,7 @@ import flet as ft
 from pydantic import ValidationError
 from src.core.database import get_db
 from src.data.repositories.empresa_repository import EmpresaRepository
-from src.data.repositories.parametricos_repository import ConvenioRepository
+from src.data.repositories.parametricos_repository import ArtRepository, ConvenioRepository
 from src.domain.schemas.empresa_schema import EmpresaCreate, EmpresaUpdate
 from src.ui.components.empresa_card import EmpresaCard
 
@@ -11,15 +11,29 @@ class EmpresasPage(ft.Column):
         super().__init__()
         self.on_seleccionar_empresa = on_seleccionar_empresa
         self.expand = True
-
-        # Si es None, estamos creando
-        # Si tiene un ID, estamos editando
         self.id_empresa_editar = None
 
-        # --- REFERENCIAS A INPUTS ---
+        # --- INPUTS ---
         self.txt_razon_social = ft.TextField(label="Razón Social", expand=True)
         self.txt_cuit = ft.TextField(label="CUIT (sólo números)",max_length=11, expand=True)
-        self.dd_convenio = ft.Dropdown(label="Convenio", expand=True)
+
+        self.lv_convenios = ft.Column(scroll=ft.ScrollMode.AUTO, height=150)
+        self.text_error_convenio = ft.Text("", color=ft.Colors.ERROR, size=12, visible=False)
+        self.borde_convenios = ft.Container(
+                content=self.lv_convenios,
+                border=ft.border.all(1, ft.Colors.GREY_400),
+                border_radius=5,
+                padding=5,
+                )
+        self.container_convenios = ft.Container(
+                content=ft.Column([
+                    ft.Text("Convenios y Sindicatos:", weight=ft.FontWeight.BOLD),
+                    self.borde_convenios,
+                    self.text_error_convenio
+                    ])
+                )
+
+        self.dd_art = ft.Dropdown(label="A.R.T.", expand=True)
 
         # Ubicación
         self.txt_calle = ft.TextField(label="Calle", expand=True)
@@ -55,7 +69,9 @@ class EmpresasPage(ft.Column):
                     controls=[
                         ft.Text("Datos Fiscales", weight=ft.FontWeight.BOLD),
                         ft.Row([self.txt_razon_social, self.txt_cuit]),
-                        self.dd_convenio,
+                        self.dd_art,
+                        ft.Divider(),
+                        self.container_convenios,
                         ft.Divider(),
                         ft.Text("Ubicación", weight=ft.FontWeight.BOLD),
                         ft.Row([self.txt_calle, self.txt_numero]),
@@ -139,40 +155,49 @@ class EmpresasPage(ft.Column):
                 repositorio = EmpresaRepository(session)
                 empresas = await repositorio.get_all()
 
-                if not empresas:
-                    self.empty_state.visible = True
-                else:
-                    # Generamos una carta por cada empresa
-                    for empresa in empresas:
-                        card = EmpresaCard(
-                                empresa=empresa,
-                                on_edit=self.editar_empresa,
-                                on_delete=self.borrar_empresa,
-                                on_ver_empleados=self.navegar_a_empleados,
-                                )
-                        self.grid.controls.append(card)
+                self.empty_state.visible = not empresas
+                # Generamos una carta por cada empresa
+                for empresa in empresas:
+                    card = EmpresaCard(
+                            empresa=empresa,
+                            on_edit=self.editar_empresa,
+                            on_delete=self.borrar_empresa,
+                            on_ver_empleados=self.navegar_a_empleados,
+                            )
+                    self.grid.controls.append(card)
         except Exception as e:
-            self.mostrar_error(f"Error cargando datos: {e}")
+            self._mostrar_mensaje(f"Error cargando datos: {e}", ft.Colors.RED)
         finally:
             self.loading.visible = False
             self.update()
 
-    async def _cargar_convenios(self):
-        self.dd_convenio.options.clear()
+    async def _cargar_parametricos(self):
+        self.dd_art.options.clear()
+        self.lv_convenios.controls.clear()
+
         async for session in get_db():
-            repositorio = ConvenioRepository(session)
-            convenios = await repositorio.get_all()
+            repositorio_art = ArtRepository(session)
+            arts = await repositorio_art.get_all()
+            for art in arts:
+                self.dd_art.options.append(ft.dropdown.Option(str(art.id), art.nombre))
+
+            repositorio_convenio = ConvenioRepository(session)
+            convenios = await repositorio_convenio.get_all_con_sindicato()
             for convenio in convenios:
-                self.dd_convenio.options.append(ft.dropdown.Option(str(convenio.id), convenio.nombre))
+                nombre_sindicato = convenio.sindicato_rel.nombre if convenio.sindicato_rel else "Sin Sindicato"
+                label_texto = f"{nombre_sindicato} - {convenio.nombre}"
+
+                checkbox = ft.Checkbox(label=label_texto, value=False, data=convenio.id)
+                self.lv_convenios.controls.append(checkbox)
+
 
     # --- LÓGICA DEL FORMULARIO ---
     async def abrir_dialogo_crear(self, e):
         self.id_empresa_editar = None
         self.dialogo.title = ft.Text("Nueva Empresa")
-
         self._limpiar_controles_dialogo()
 
-        await self._cargar_convenios()
+        await self._cargar_parametricos()
 
         # 3. Abrir diálogo
         self.page.open(self.dialogo)
@@ -186,14 +211,14 @@ class EmpresasPage(ft.Column):
         self._quitar_errores_controles_dialogo()
         self.dialogo.update()
 
-        try:
-            # Pydantic espera un id mayor a 0, sino se seleccionó ningún convenio mandamos cero para detectar el error
-            convenio_id = int(self.dd_convenio.value) if self.dd_convenio.value else 0
+        ids_convenios = [convenio.data for convenio in self.lv_convenios.controls if convenio.value]
 
+        try:
             datos = {
                     "razon_social": self.txt_razon_social.value,
                     "cuit": self.txt_cuit.value,
-                    "convenio_id": convenio_id,
+                    "art_id": int(self.dd_art.value) if self.dd_art.value else 0,
+                    "convenios_ids": ids_convenios,
                     "calle": self.txt_calle.value,
                     "numero": self.txt_numero.value,
                     "piso": self.txt_piso.value,
@@ -214,66 +239,28 @@ class EmpresasPage(ft.Column):
 
             # Cerramos el diálogo
             self.page.close(self.dialogo)
-            self.page.open(ft.SnackBar(ft.Text("Empresa guardada"), bgcolor=ft.Colors.GREEN))
+            self._mostrar_mensaje("Empresa creada con éxito", ft.Colors.GREEN)
             await self.cargar_datos()
 
         except ValidationError as ve:
-            # --- MAPEAMOS LOS ERRORES PARA ACTUALIZAR LOS INPUTS ---
-            mapa_errores = {
-                    "razon_social": self.txt_razon_social,
-                    "cuit": self.txt_cuit,
-                    "convenio_id": self.dd_convenio,
-                    "calle": self.txt_calle,
-                    "numero": self.txt_numero,
-                    "piso": self.txt_piso,
-                    "depto": self.txt_depto,
-                    "localidad": self.txt_localidad,
-                    "provincia": self.txt_provincia,
-                    "codigo_postal": self.txt_codigo_postal,
-                    "telefono": self.txt_telefono,
-                    "mail": self.txt_mail,
-                    }
-
-            errores = ve.errors()
-            for error in errores:
-                nombre_campo = error["loc"][0]
-                mensaje = error["msg"]
-
-                # Buscamos el input que tiene error y lo pintamos
-                if nombre_campo in mapa_errores:
-                    input_flet = mapa_errores[nombre_campo]
-                    input_flet.error_text = mensaje
-                    input_flet.update()
+            self._mapear_errores(ve)
 
         except Exception as ex:
-            error_str = str(ex).lower()
-
-            if "unique constraint" in error_str:
-                if ".cuit" in error_str:
-                    self.txt_cuit.error_text = "Este CUIT ya está registrado"
-                    self.txt_cuit.update()
-                elif ".razon_social" in error_str:
-                    self.txt_razon_social.error_text = "Esta Razón Social ya existe"
-                    self.txt_razon_social.update()
-                else:
-                    self.mostrar_error("Error de duplicado en la base de datos.")
-            else:   
-                self.mostrar_error(f"Error inesperado al guardar: {ex}")
+            self._mostrar_error_db(ex)
 
     async def editar_empresa(self, id_empresa):
+        self.loading.visible = True
+        self.update()
         try:
-            self.loading.visible = True
-            self.update()
-
             async for session in get_db():
                 repositorio = EmpresaRepository(session)
                 empresa = await repositorio.get_para_edicion(id_empresa)
 
                 if not empresa:
-                    self.mostrar_error("No se encontró las empresa")
+                    self._mostrar_mensaje("No se encontró las empresa", ft.Colors.RED)
                     return
 
-                await self._cargar_convenios()
+                await self._cargar_parametricos()
 
                 # Llenamos los inputs con los datos de la DB
                 self.id_empresa_editar = id_empresa
@@ -281,7 +268,7 @@ class EmpresasPage(ft.Column):
 
                 self.txt_razon_social.value = empresa.razon_social
                 self.txt_cuit.value = empresa.cuit
-                self.dd_convenio.value = str(empresa.convenio_rel.id)
+                self.dd_art.value = str(empresa.art_rel.id)
                 self.txt_calle.value = empresa.calle
                 self.txt_numero.value = empresa.numero
                 self.txt_piso.value = empresa.piso
@@ -292,20 +279,16 @@ class EmpresasPage(ft.Column):
                 self.txt_telefono.value = empresa.telefono
                 self.txt_mail.value = empresa.mail
 
-                # Limpiamos errores previos
-                todos_los_inputs = [
-                    self.txt_razon_social, self.txt_cuit, self.dd_convenio,
-                    self.txt_calle, self.txt_numero, self.txt_piso,
-                    self.txt_depto, self.txt_localidad, self.txt_provincia,
-                    self.txt_codigo_postal, self.txt_telefono, self.txt_mail,
-                    ]
-                for control in todos_los_inputs:
-                    control.error_text = None
+                ids_actuales = [convenio.id for convenio in empresa.convenios]
+                for checkbox in self.lv_convenios.controls:
+                    checkbox.value = checkbox.data in ids_actuales
 
+
+                self._quitar_errores_controles_dialogo()
                 self.page.open(self.dialogo)
                 
         except Exception as e:
-            self.mostrar_error(f"Error al cargar edición: {e}")
+            self._mostrar_mensaje(f"Error al cargar edición: {e}", ft.Colors.RED)
         finally:
             self.loading.visible = False
             self.update()
@@ -330,11 +313,11 @@ class EmpresasPage(ft.Column):
                 repositorio = EmpresaRepository(session)
                 await repositorio.delete(self.id_a_borrar)
 
-            self.page.open(ft.SnackBar(ft.Text("Empresa eliminada"), bgcolor=ft.Colors.GREEN))
+            self._mostrar_mensaje("Empresa eliminada", ft.Colors.GREEN)
             await self.cargar_datos()
 
         except Exception as ex:
-            self.mostrar_error(f"Error al borrar: {ex}")
+            self._mostrar_mensaje(f"Error al borrar: {ex}", ft.Colors.RED)
         finally:
             self.id_a_borrar = None
             self.loading.visible = False
@@ -344,13 +327,63 @@ class EmpresasPage(ft.Column):
         if self.on_seleccionar_empresa:
             await self.on_seleccionar_empresa(empresa_obj)
 
-    def mostrar_error(self, mensaje):
-        self.page.open(ft.SnackBar(ft.Text(mensaje), bgcolor=ft.Colors.RED))
+    def _mapear_errores(self, ve):
+            mapa_errores = {
+                    "razon_social": self.txt_razon_social,
+                    "cuit": self.txt_cuit,
+                    "art_id": self.dd_art,
+                    "calle": self.txt_calle,
+                    "numero": self.txt_numero,
+                    "piso": self.txt_piso,
+                    "depto": self.txt_depto,
+                    "localidad": self.txt_localidad,
+                    "provincia": self.txt_provincia,
+                    "codigo_postal": self.txt_codigo_postal,
+                    "telefono": self.txt_telefono,
+                    "mail": self.txt_mail,
+                    }
+
+            errores = ve.errors()
+            for error in errores:
+                nombre_campo = error["loc"][0]
+                mensaje = error["msg"]
+
+                # Buscamos el input que tiene error y lo pintamos
+                if nombre_campo in mapa_errores:
+                    input_flet = mapa_errores[nombre_campo]
+                    input_flet.error_text = mensaje
+                    input_flet.update()
+
+                elif nombre_campo == "convenios_ids":
+                    self.borde_convenios.border = ft.border.all(1, ft.Colors.ERROR)
+                    self.borde_convenios.update()
+
+                    self.text_error_convenio.value = "Debe seleccionar al menos un convenio"
+                    self.text_error_convenio.visible = True
+                    self.text_error_convenio.update()
+
+    def _mostrar_error_db(self, ex):
+        error_str = str(ex).lower()
+
+        if "unique constraint" in error_str:
+            if ".cuit" in error_str:
+                self.txt_cuit.error_text = "Este CUIT ya está registrado"
+                self.txt_cuit.update()
+            elif ".razon_social" in error_str:
+                self.txt_razon_social.error_text = "Esta Razón Social ya existe"
+                self.txt_razon_social.update()
+            else:
+                self._mostrar_mensaje("Error de duplicado en la base de datos.", ft.Colors.RED)
+        else:   
+            self._mostrar_mensaje(f"Error inesperado al guardar: {ex}", ft.Colors.RED)
+
+    def _mostrar_mensaje(self, mensaje, color):
+        self.page.open(ft.SnackBar(ft.Text(mensaje), bgcolor=color))
     
     def _limpiar_controles_dialogo(self):
         # 1. Limpiar campos anteriores
         todos_los_inputs = [
-            self.txt_razon_social, self.txt_cuit, self.dd_convenio,
+            self.txt_razon_social, self.txt_cuit, self.dd_art,
             self.txt_calle, self.txt_numero, self.txt_piso,
             self.txt_depto, self.txt_localidad, self.txt_provincia,
             self.txt_codigo_postal, self.txt_telefono, self.txt_mail,
@@ -364,7 +397,7 @@ class EmpresasPage(ft.Column):
     def _quitar_errores_controles_dialogo(self):
         # 1. Limpiar campos anteriores
         todos_los_inputs = [
-            self.txt_razon_social, self.txt_cuit, self.dd_convenio,
+            self.txt_razon_social, self.txt_cuit, self.dd_art,
             self.txt_calle, self.txt_numero, self.txt_piso,
             self.txt_depto, self.txt_localidad, self.txt_provincia,
             self.txt_codigo_postal, self.txt_telefono, self.txt_mail,
@@ -373,3 +406,10 @@ class EmpresasPage(ft.Column):
         # 2. Reseteamos errores visuales
         for control in todos_los_inputs:
             control.error_text = None
+
+        self.borde_convenios.border = ft.border.all(1, ft.Colors.GREY_400)
+        # self.borde_convenios.update()
+
+        self.text_error_convenio.value = ""
+        self.text_error_convenio.visible = False
+        # self.text_error_convenio.update()

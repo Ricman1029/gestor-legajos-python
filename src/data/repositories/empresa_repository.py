@@ -1,8 +1,10 @@
 from typing import Optional
+from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 from src.data.repositories.base_repository import BaseRepository
 from src.data.models.empresa_model import Empresa
 from src.domain.schemas.empresa_schema import EmpresaCreate, EmpresaUpdate
+from src.data.models.parametricos_model import Convenio
 
 class EmpresaRepository(BaseRepository[Empresa]):
     def __init__(self, session):
@@ -13,7 +15,8 @@ class EmpresaRepository(BaseRepository[Empresa]):
         return await self.get_by_id(
                 id_empresa,
                 options=[
-                    selectinload(Empresa.convenio_rel),
+                    selectinload(Empresa.convenios),
+                    selectinload(Empresa.art_rel),
                     ]
                 )
 
@@ -21,28 +24,45 @@ class EmpresaRepository(BaseRepository[Empresa]):
         """
         Recibe el Schema validado, lo convierte a Modelo y lo guarda.
         """
-        # Convertimos Pydantic -> Diccionario -> Modelo SQLAlchemy
-        # **schema.model_dump() desempaqueta el diccionario:
-        # Empresa(razon_social="...", cuit="...", ...)
-        db_obj = Empresa(**schema.model_dump())
+        datos = schema.model_dump()
+        ids_convenios = datos.pop("convenios_ids", [])
 
-        self.session.add(db_obj)
+        empresa = Empresa(**datos)
+
+        if ids_convenios:
+            stm = select(Convenio).where(Convenio.id.in_(ids_convenios))
+            result = await self.session.execute(stm)
+            objetos_convenio = result.scalars().all()
+
+            empresa.convenios = list(objetos_convenio)
+
+        self.session.add(empresa)
         await self.session.commit()
-        await self.session.refresh(db_obj)
-        return db_obj
+        await self.session.refresh(empresa, attribute_names=["convenios", "art_rel"])
+        return empresa
 
-    async def update(self, id: int, schema: EmpresaUpdate) -> Empresa | None:
-        db_obj = await self.get_by_id(id)
-        if not db_obj:
+    async def update(self, id: int, schema: EmpresaUpdate) -> Optional[Empresa]:
+        empresa = await self.get_para_edicion(id)
+        if not empresa:
             return None
 
-        # Actualizamos solo los campos que vienen en el schema (excluimos nulos)
-        update_data = schema.model_dump(exclude_unset=True)
+        datos = schema.model_dump(exclude_unset=True)
 
-        for key, value in update_data.items():
-            setattr(db_obj, key, value)
+        if "convenios_ids" in datos:
+            ids_convenios = datos.pop("convenios_ids")
 
-        self.session.add(db_obj)
+            stm = select(Convenio).where(Convenio.id.in_(ids_convenios))
+            result = await self.session.execute(stm)
+            nuevos_convenios = result.scalars().all()
+
+            empresa.convenios = list(nuevos_convenios)
+
+        for key, value in datos.items():
+            setattr(empresa, key, value)
+
+        self.session.add(empresa)
         await self.session.commit()
-        await self.session.refresh(db_obj)
-        return db_obj
+        await self.session.refresh(empresa)
+        return empresa
+
+

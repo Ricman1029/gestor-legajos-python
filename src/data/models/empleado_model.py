@@ -20,6 +20,7 @@ class Empleado(Base):
     sexo: Mapped[str] = mapped_column(String(20), nullable=False)
     nacionalidad: Mapped[str] = mapped_column(String(50), nullable=False)
     fecha_nacimiento: Mapped[date] = mapped_column(Date, nullable=False)
+    estado_civil: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
 
     # --- DATOS LABORALES ---
     numero_legajo: Mapped[str] = mapped_column(String(50), nullable=False)
@@ -38,7 +39,10 @@ class Empleado(Base):
     localidad: Mapped[str] = mapped_column(String(100), nullable=False)
     provincia: Mapped[str] = mapped_column(String(100), nullable=False)
     codigo_postal: Mapped[str] = mapped_column(String(50), nullable=False)
+
+    # --- CONTACTO ---
     telefono: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    mail: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
 
     empresa: Mapped["Empresa"] = relationship(back_populates="empleados")
 
