@@ -2,6 +2,9 @@ from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parents[2]
 
+STORAGE_DIR = BASE_DIR / "storage"
+TEMP_DIR = STORAGE_DIR / "temp"
+
 ASSETS_DIR = BASE_DIR / "assets"
 TEMPLATES_DIR = ASSETS_DIR / "templates"
 

@@ -174,12 +174,12 @@ class EmpleadosPage(ft.Column):
 
         self.tabla = ft.DataTable(
                 columns=[
-                    ft.DataColumn(ft.Text("Legajo")),
-                    ft.DataColumn(ft.Text("Apellido y Nombre")),
-                    ft.DataColumn(ft.Text("CUIL")),
-                    ft.DataColumn(ft.Text("Categoría")),
-                    ft.DataColumn(ft.Text("Estado")),
-                    ft.DataColumn(ft.Text("Acciones")),
+                    ft.DataColumn(ft.Text("Legajo", color=ft.Colors.GREY_700)),
+                    ft.DataColumn(ft.Text("Apellido y Nombre", color=ft.Colors.GREY_700)),
+                    ft.DataColumn(ft.Text("CUIL", color=ft.Colors.GREY_700)),
+                    ft.DataColumn(ft.Text("Categoría", color=ft.Colors.GREY_700)),
+                    ft.DataColumn(ft.Text("Estado", color=ft.Colors.GREY_700)),
+                    ft.DataColumn(ft.Text("Acciones", color=ft.Colors.GREY_700)),
                     ],
                 rows=[],
                 border=ft.border.all(1, ft.Colors.GREY_300),
@@ -234,12 +234,10 @@ class EmpleadosPage(ft.Column):
             self.update()
 
 
-    async def generar_contrato(self, e):
-        id_empleado = e.control.data
-
+    async def generar_contrato(self, id_empleado):
         self.loading.visible = True
         self.update()
-        self.page.open(ft.SnackBar(ft.Text("Generando contrato para el empleado"), bgcolor=ft.Colors.BLUE))
+        # self.page.open(ft.SnackBar(ft.Text("Generando contrato para el empleado"), bgcolor=ft.Colors.BLUE))
         
         try:
             async for session in get_db():
@@ -248,22 +246,13 @@ class EmpleadosPage(ft.Column):
                 ruta_pdf = await servicio.generar_contrato_empleado(id_empleado)
 
                 if ruta_pdf:
-                    self.page.open(ft.SnackBar(
-                        ft.Text(f"El legajo fue generado con éxito en: {ruta_pdf}"),
-                        bgcolor=ft.Colors.GREEN
-                        ))
+                    self._mostrar_mensaje(f"El legajo fue generado con éxito en: {ruta_pdf}", ft.Colors.GREEN)
                 else:
-                    self.page.open(ft.SnackBar(
-                        ft.Text("Error: El servicio no devolvió una ruta válida"),
-                        bgcolor=ft.Colors.RED
-                        ))
+                    self._mostrar_mensaje("Error: El servicio no devolvió una ruta válida", ft.Colors.RED)
 
         except Exception as ex:
             print(f"Error generando PDF: {ex}")
-            self.page.open(ft.SnackBar(
-                ft.Text(f"Error generando PDF: {ex}"),
-                bgcolor=ft.Colors.RED
-                ))
+            self._mostrar_mensaje(f"Error generando PDF: {ex}", ft.Colors.RED)
 
         finally:
             self.loading.visible = False
@@ -434,7 +423,8 @@ class EmpleadosPage(ft.Column):
 
     async def boton_generar_contrato_click(self, e):
         id_empleado = e.control.data
-        self._mostrar_mensaje(f"Generando contrato ID {id_empleado}...", ft.Colors.BLUE)
+        # self._mostrar_mensaje(f"Generando contrato ID {id_empleado}...", ft.Colors.BLUE)
+        await self.generar_contrato(id_empleado)
         
     async def cerrar_dialogo(self, e):
         self.page.close(self.dialogo)
@@ -561,7 +551,8 @@ class EmpleadosPage(ft.Column):
                 "localidad": self.txt_localidad.value,
                 "provincia": self.txt_provincia.value,
                 "codigo_postal": self.txt_codigo_postal.value,
-                "telefono": self.txt_telefono.value
+                "telefono": self.txt_telefono.value or "",
+                "mail": self.txt_mail.value or "",
                 }
 
     def _mapear_errores_formulario(self, ve):
@@ -617,6 +608,7 @@ class EmpleadosPage(ft.Column):
         self.txt_provincia.value = empleado.provincia
         self.txt_codigo_postal.value = empleado.codigo_postal
         self.txt_telefono.value = empleado.telefono or ""
+        self.txt_mail.value = empleado.mail or ""
         
         if empleado.obra_social_rel:
             self.dd_obra_social.value = str(empleado.obra_social_rel.id)

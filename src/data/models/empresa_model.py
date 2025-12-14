@@ -23,9 +23,9 @@ class Empresa(Base):
     numero: Mapped[str] = mapped_column(String(20), nullable=False)
     piso: Mapped[Optional[str]] = mapped_column(String(10), nullable=True)
     depto: Mapped[Optional[str]] = mapped_column(String(10), nullable=True)
-    localidad: Mapped[Optional[str]] = mapped_column(String(100), nullable=False)
-    provincia: Mapped[Optional[str]] = mapped_column(String(100), nullable=False)
-    codigo_postal: Mapped[Optional[str]] = mapped_column(String(20), nullable=False)
+    localidad: Mapped[str] = mapped_column(String(100), nullable=False)
+    provincia: Mapped[str] = mapped_column(String(100), nullable=False)
+    codigo_postal: Mapped[str] = mapped_column(String(20), nullable=False)
 
     # --- CONTACTO ---
     telefono: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)

@@ -25,7 +25,7 @@ def inspeccionar_widgets(nombre_archivo: str):
 
     print(f"--- Total de campos encontrados: {contador} ---")
 
-def inspccionar_dibujos(self, nombre_archivo: str):
+def inspccionar_dibujos(nombre_archivo: str):
     """
     Imprime en consola los nombres de los dibujos del formulario
     para saber qué claves usar en el diccionario de datos.
@@ -53,7 +53,6 @@ def llenar_campo(
         campo_buscado: str,
         nombre_widget: str,
         coincidencia: int = 0,
-        ancho: int = 300,
         x: int = 10, y: int = 0,
         ):
     print(f"Buscando campo '{campo_buscado}'...")
@@ -64,9 +63,9 @@ def llenar_campo(
 
         rectangulo = areas[coincidencia]
         x0 = rectangulo.x1 + x
-        x1 = x0 + ancho
-        y0 = rectangulo.y0 + y
-        y1 = rectangulo.y1 + y
+        x1 = x0 + 10
+        y1 = rectangulo.y1 - y
+        y0 = y1 - 5
 
         widget = pymupdf.Widget()
         widget.rect = pymupdf.Rect(x0, y0, x1, y1)
@@ -75,61 +74,7 @@ def llenar_campo(
         widget.text_fontsize = 10
         widget.border_color = [1,0,0]
         widget.border_width = 1
-        widget.field_value = campo_buscado
+        widget.field_value = campo_buscado.upper()
         pagina.add_widget(widget)
     else:
         print(f"No se encontró el campo {campo_buscado}\n")
-
-def llenar_fecha(
-        pagina: pymupdf.Page, 
-        campo_buscado: str,
-        tipo_fecha: str,
-        x: int = 10, y: int = 0, 
-        ancho: int = 20
-        ):
-    print(f"Buscando campo '{campo_buscado}'...")
-    areas = pagina.search_for(campo_buscado)
-
-    if areas:
-        print("Encontrado! Creando Widget...")
-
-        rectangulo = areas[0]
-        x0 = rectangulo.x1 + x
-        x1 = x0 + ancho
-        y0 = rectangulo.y0 + y
-        y1 = rectangulo.y1 + y
-
-        widget = pymupdf.Widget()
-        widget.rect = pymupdf.Rect(x0, y0, x1, y1)
-        widget.field_name = f"empleado_dia_{tipo_fecha}"
-        widget.field_type = 7
-        widget.text_fontsize = 10
-        widget.field_value = "Dia"
-        widget.border_color = [1,0,0]
-        widget.border_width = 1
-        pagina.add_widget(widget)
-
-        x0 = x1 + 5
-        x1 = x0 + ancho
-        widget = pymupdf.Widget()
-        widget.rect = pymupdf.Rect(x0, y0, x1, y1)
-        widget.field_name = f"empleado_mes_{tipo_fecha}"
-        widget.field_type = 7
-        widget.text_fontsize = 10
-        widget.field_value = "Mes"
-        widget.border_color = [1,0,0]
-        widget.border_width = 1
-        pagina.add_widget(widget)
-
-        x0 = x1 + 9
-        x1 = x0 + ancho
-        widget = pymupdf.Widget()
-        widget.rect = pymupdf.Rect(x0, y0, x1, y1)
-        widget.field_name = f"empleado_año_{tipo_fecha}"
-        widget.field_type = 7
-        widget.text_fontsize = 10
-        widget.field_value = "Año"
-        widget.border_color = [1,0,0]
-        widget.border_width = 1
-        pagina.add_widget(widget)
-

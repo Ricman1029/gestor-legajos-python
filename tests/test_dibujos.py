@@ -1,11 +1,9 @@
 import sys
-from src.domain.services.form_filler_service import FormFillerService
+from tests.utilidades import inspccionar_dibujos
 
 def probar_inspeccion():
 
-    service = FormFillerService()
-    
-    service.inspccionar_dibujos(sys.argv[1])
+    inspccionar_dibujos(sys.argv[1])
 
 if __name__ == "__main__":
     probar_inspeccion()

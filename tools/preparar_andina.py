@@ -16,32 +16,36 @@ def generar_formulario_andina():
     page = doc[0]
 
     # Empleado
-    llenar_campo(page, "apellido y nombre", "empleado_nombre_completo", x=4)
-    llenar_campo(page, "n°", "empleado_dni_numero", ancho=110, x=4)
-    llenar_campo(page, "expedido por", "expedido_por", ancho=110, x=4)
-    llenar_campo(page, "ahorro", "empleado_cuil", ancho=150, x=4)
-    llenar_campo(page, "ficha, etc.", "empleado_legajo", ancho=70, x=4)
-    llenar_campo(page, "cap. asegurado", "empleado_sueldo", ancho=70, x=4)
-    llenar_campo(page, "calle", "empleado_calle", ancho=110, x=4)
+    llenar_campo(page, "apellido y nombre", "empleado_nombre_completo", x=4, y=1)
+    llenar_campo(page, "n°", "empleado_dni_numero", x=4, y=1)
+    llenar_campo(page, "expedido por", "expedido_por", x=4, y=1)
+    llenar_campo(page, "ahorro", "empleado_cuil", x=4, y=1)
+    llenar_campo(page, "ficha, etc.", "empleado_legajo", x=4, y=1)
+    llenar_campo(page, "cap. asegurado", "empleado_sueldo", x=4, y=1)
+    llenar_campo(page, "calle", "empleado_calle", x=4, y=1)
     # probando el numero de calle
-    llenar_campo(page, "n°", "empleado_numero", 2, ancho=40, x=4)
-    llenar_campo(page, "piso/dto", "empleado_piso_depto", ancho=40, x=4)
-    llenar_campo(page, "c.p.", "empleado_codigo_postal", ancho=45, x=4)
-    llenar_campo(page, "localidad", "empleado_localidad", ancho=50, x=4)
-    llenar_campo(page, "provincia", "empleado_provincia", ancho=56, x=4)
+    llenar_campo(page, "n°", "empleado_numero", 2, x=4, y=1)
+    llenar_campo(page, "piso/dto", "empleado_piso_depto", x=4, y=1)
+    llenar_campo(page, "c.p.", "empleado_codigo_postal", x=4, y=1)
+    llenar_campo(page, "localidad", "empleado_localidad", x=4, y=1)
+    llenar_campo(page, "provincia", "empleado_provincia", x=4, y=1)
 
-    llenar_fecha(page, "fecha de nacimiento", "nacimiento", x=12, ancho=23)
-    llenar_fecha(page, "fecha ingreso al empleo", "ingreso", x=23, ancho=23)
+    llenar_campo(page, "nacimiento", "empleado_dia_nacimiento", x=16, y=1)
+    llenar_campo(page, "nacimiento", "empleado_mes_nacimiento", x=46, y=1)
+    llenar_campo(page, "nacimiento", "empleado_año_nacimiento", x=68, y=1)
+
+    llenar_campo(page, "al empleo", "empleado_dia_ingreso", x=28, y=1)
+    llenar_campo(page, "al empleo", "empleado_mes_ingreso", x=58, y=1)
+    llenar_campo(page, "al empleo", "empleado_año_ingreso", x=80, y=1)
 
     # Empleador
-    llenar_campo(page, "razon social", "empresa_razon_social", x=4)
-    # agregar domicilio del empleador (se puede hacer para que funcione con numero de calle de empleado)
-    llenar_campo(page, "calle", "empresa_calle", 1, ancho=110, x=4)
-    llenar_campo(page, "n°", "empresa_numero", 3, ancho=40, x=4)
-    llenar_campo(page, "piso/dto", "empresa_piso_depto", 1, ancho=40, x=4)
-    llenar_campo(page, "c.p.", "empresa_codigo_postal", 1, ancho=45, x=4)
-    llenar_campo(page, "localidad", "empresa_localidad", 1, ancho=50, x=4)
-    llenar_campo(page, "provincia", "empresa_provincia", 1, ancho=56, x=4)
+    llenar_campo(page, "razon social", "empresa_razon_social", x=4, y=1)
+    llenar_campo(page, "calle", "empresa_calle", 1, x=4, y=1)
+    llenar_campo(page, "n°", "empresa_numero", 3, x=4, y=1)
+    llenar_campo(page, "piso/dto", "empresa_piso_depto", 1, x=4, y=1)
+    llenar_campo(page, "c.p.", "empresa_codigo_postal", 1, x=4, y=1)
+    llenar_campo(page, "localidad", "empresa_localidad", 1, x=4, y=1)
+    llenar_campo(page, "provincia", "empresa_provincia", 1, x=4, y=1)
 
     llenar_fecha_firma(page, "fecha (dia/mes/", "empleado_fecha_ingreso")
 

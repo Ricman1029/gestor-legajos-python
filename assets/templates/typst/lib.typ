@@ -3,19 +3,19 @@
 #let pagina_ficha_legajo(datos) = {
   encabezado_legajo(datos.empleado)
 
-  v(1.2cm)
+  v(1cm)
 
   seccion_datos_personales(datos.empleado)
 
-  v(0.8cm)
+  v(0.7cm)
 
   seccion_detalle_contrato(datos.empleado, datos.empresa.convenio)
 
-  v(0.8cm)
+  v(0.7cm)
 
   seccion_seguridad_social(datos.empleado)
 
-  v(0.8cm)
+  v(0.7cm)
 
   encabezado_de_seccion("Beneficiarios Seguro de Vida")
   tabla_beneficiarios

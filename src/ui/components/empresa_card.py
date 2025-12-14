@@ -53,7 +53,8 @@ class EmpresaCard(ft.Container):
                                 size=16,
                                 max_lines=1,
                                 overflow=ft.TextOverflow.ELLIPSIS,
-                                width=180
+                                width=180,
+                                color=ft.Colors.GREY_700,
                                 ),
                             ft.Text(
                                 value=f"CUIT: {empresa.cuit}",
