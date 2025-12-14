@@ -82,6 +82,7 @@ class EmpleadoUpdate(BaseModel):
     provincia: Optional[str] = None
     codigo_postal: Optional[str] = None
     telefono: Optional[str] = None
+    mail: Optional[str] = None
 
 class EmpleadoSchema(EmpleadoBase):
     """Lo devolvemos a la UI"""

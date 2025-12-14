@@ -1,6 +1,6 @@
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload, selectinload
-from src.data.models.parametricos_model import Categoria
+from src.data.models.parametricos_model import Categoria, Convenio
 from src.data.repositories.base_repository import BaseRepository
 from src.data.models.empleado_model import Empleado
 from src.domain.schemas.empleado_schema import EmpleadoCreate, EmpleadoUpdate
@@ -53,7 +53,9 @@ class EmpleadoRepository(BaseRepository[Empleado]):
         return await self.get_by_id(
                 id_empleado,
                 options=[
-                    selectinload(Empleado.categoria_rel).selectinload(Categoria.convenio),
+                    selectinload(Empleado.categoria_rel)
+                    .selectinload(Categoria.convenio)
+                    .selectinload(Convenio.sindicato_rel),
                     selectinload(Empleado.obra_social_rel)
                     ]
                 )

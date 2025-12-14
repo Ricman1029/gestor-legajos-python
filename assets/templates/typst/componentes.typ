@@ -129,7 +129,7 @@
           align(center+horizon)[#text(size:8pt, fill:luma(150))[Espacio Sello Empresa]]
         ),
         text(weight: "bold", size: 9pt, empresa.razon_social),
-        text(size: 8pt, fill: luma(100), "C.U.I.T. " + empresa.cuit)
+        text(size: 8pt, fill: luma(100), "C.U.I.T. " + empresa.display.cuit)
       )
     )]
   )
@@ -144,7 +144,7 @@
     align(left)[
       #text(size: 9pt, fill: luma(100))[
         *Nombre:* #empleado.display.nombre_completo \
-        *D.N.I.:* #empleado.identificacion.dni \
+        *D.N.I.:* #empleado.display.dni \
         *Fecha:* #empleado.laborales.fecha_ingreso
       ]
     ],
@@ -161,7 +161,7 @@
       #text(size: 26pt, weight: "black", fill: luma(20), empleado.display.nombre_completo) \
       #v(0.2em)
       #text(size: 11pt, fill: luma(100), weight: "medium")[
-        CUIL: #empleado.identificacion.cuil
+        CUIL: #empleado.display.cuil
       ]
     ],
     etiqueta_borde[LEGAJO #empleado.legajo]
@@ -175,15 +175,15 @@
     row-gutter: 2.5em, 
     column-gutter: 2em,
 
-    info_item("Documento (D.N.I.)", empleado.identificacion.dni),
+    info_item("Documento (D.N.I.)", empleado.display.dni),
     info_item("Fecha de Nacimiento", empleado.identificacion.fecha_nacimiento),
     info_item("Sexo", empleado.identificacion.sexo),
 
     grid.cell(colspan: 2, info_item("Domicilio Real", empleado.display.direccion_completa)),
     info_item("Localidad", empleado.direccion.localidad),
 
-    info_item("Teléfono", empleado.contacto.telefono),
-    grid.cell(colspan: 2, info_item("Email", empleado.contacto.mail)),
+    if empleado.contacto.telefono != "" { info_item("Teléfono", empleado.contacto.telefono) } else { input_field("Teléfono") },
+    if empleado.contacto.mail != "" { grid.cell(colspan: 2, info_item("Email", empleado.contacto.mail)) } else { input_field("Email") },
   )
 }
 
@@ -228,7 +228,7 @@
   bloque_legal[
       #text(size: 10pt, fill: luma(50))[
         *Señor/a:* #empleado.display.nombre_completo \
-        *D.N.I.:* #empleado.identificacion.dni
+        *D.N.I.:* #empleado.display.dni
 
         #v(1em)
 
@@ -258,7 +258,7 @@
 #let notificacion_desempleo_anses(empresa, empleado) = {
   bloque_legal[
     #text(size: 9.5pt, fill: luma(40))[
-      Por la presente se pone en conocimiento del trabajador *#empleado.display.nombre_completo* (D.N.I. #empleado.identificacion.dni), que ingresa bajo relación de dependencia de la
+      Por la presente se pone en conocimiento del trabajador *#empleado.display.nombre_completo* (D.N.I. #empleado.display.dni), que ingresa bajo relación de dependencia de la
       empresa *#empresa.razon_social* con fecha *#empleado.laborales.fecha_ingreso*, que en caso de encontrarse cobrando actualmente el *FONDO DE DESEMPLEO* gestionado a través de
       ANSES, dispone de un plazo perentorio de:
     ]
