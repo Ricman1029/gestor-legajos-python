@@ -169,7 +169,6 @@ storage/
 
 # Archivos generados por la aplicación
 output_pdfs/
-*.pdf
 *.log
 
 # Archivos temporales de Typst

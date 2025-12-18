@@ -47,7 +47,7 @@ class GestorLegajosService:
 
         if ruta_contrato:
             return ruta_contrato
-        return "Algo salió mal"
+        raise Exception("No se pudo generar el contrato final.")
 
     def _preparar_datos_typst(self, empleado, empresa) -> dict:
         """

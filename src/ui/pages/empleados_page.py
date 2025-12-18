@@ -174,12 +174,12 @@ class EmpleadosPage(ft.Column):
 
         self.tabla = ft.DataTable(
                 columns=[
-                    ft.DataColumn(ft.Text("Legajo")),
-                    ft.DataColumn(ft.Text("Apellido y Nombre")),
-                    ft.DataColumn(ft.Text("CUIL")),
-                    ft.DataColumn(ft.Text("Categoría")),
-                    ft.DataColumn(ft.Text("Estado")),
-                    ft.DataColumn(ft.Text("Acciones")),
+                    ft.DataColumn(ft.Text("Legajo", color=ft.Colors.GREY_700)),
+                    ft.DataColumn(ft.Text("Apellido y Nombre", color=ft.Colors.GREY_700)),
+                    ft.DataColumn(ft.Text("CUIL", color=ft.Colors.GREY_700)),
+                    ft.DataColumn(ft.Text("Categoría", color=ft.Colors.GREY_700)),
+                    ft.DataColumn(ft.Text("Estado", color=ft.Colors.GREY_700)),
+                    ft.DataColumn(ft.Text("Acciones", color=ft.Colors.GREY_700)),
                     ],
                 rows=[],
                 border=ft.border.all(1, ft.Colors.GREY_300),
@@ -237,7 +237,6 @@ class EmpleadosPage(ft.Column):
     async def generar_contrato(self, id_empleado):
         self.loading.visible = True
         self.update()
-        # self.page.open(ft.SnackBar(ft.Text("Generando contrato para el empleado"), bgcolor=ft.Colors.BLUE))
         
         try:
             async for session in get_db():
