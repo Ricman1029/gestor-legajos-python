@@ -1,7 +1,7 @@
 from typing import Optional, List
 from pydantic import BaseModel, Field, ConfigDict, field_validator
 
-from domain.schemas.parametricos_schema import ArtSchema, ConvenioSchema
+from src.domain.schemas.parametricos_schema import ArtSchema, ConvenioSchema
 
 def _validar_cuit_logica(v: str) -> str:
     limpio = v.replace("-", "").replace(" ", "")

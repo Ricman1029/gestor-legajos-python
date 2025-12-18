@@ -2,6 +2,7 @@ import typst
 import json
 import logging
 import pymupdf
+from pathlib import Path
 from src.core.config import BASE_DIR, TYPST_TEMPLATES_DIR, TEMP_DIR, FORMS_TEMPLATES_DIR, OUTPUT_DIR
 
 TEMPLATE_PATH = TYPST_TEMPLATES_DIR / "generador_legajo.typ"
@@ -37,9 +38,11 @@ class PdfService:
             json_path.unlink()
 
             return str(pdf_path)
-        except Exception as e:
-            logging.error(f"Error generando PDF: {e}")
-            return None
+
+        except Exception as ex:
+            mensaje_error = f"Error generando el archivo Typst: {str(ex)} | Root usado: {BASE_DIR} | Template: {TEMPLATE_PATH}"
+            logging.error(mensaje_error)
+            raise Exception(mensaje_error)
 
     def rellenar_formulario(
             self, 
@@ -71,9 +74,11 @@ class PdfService:
             doc.save(ruta_salida)
             doc.close()
             return str(ruta_salida)
+
         except Exception as ex:
-            print(f"Error rellenando el PDF {ruta_formulario}: {ex}")
-            return None
+            mensaje_error = f"Error rellenando el formulario de {nombre_formulario}: {str(ex)}"
+            logging.error(mensaje_error)
+            raise Exception(mensaje_error)
 
     def _unir_pdfs(self, rutas_pdfs: list[str], nombre_empleado) -> str | None:
         try:
@@ -96,6 +101,11 @@ class PdfService:
                     doc.select([0, 0])
                     paginas_seguro = 2
                 doc_final.insert_pdf(doc, annots=True, widgets=True)
+                doc.close()
+
+            for archivo in rutas_pdfs:
+                ruta = Path(archivo)
+                ruta.unlink()
 
             doc_final.select([
                 # Contrato
@@ -108,8 +118,10 @@ class PdfService:
                 4, 5, 6, 7,
                 ])
             doc_final.save(ruta_destino)
+            doc_final.close()
             return str(ruta_destino)
 
         except Exception as ex:
-            print(f"Error uniendo PDFs: {ex}")
-            return None
+            mensaje_error = f"Error uniendo los pdfs para armar el contrato: {str(ex)}"
+            logging.error(mensaje_error)
+            raise Exception(mensaje_error)

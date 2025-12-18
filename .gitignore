@@ -168,7 +168,7 @@ storage/
 /db/
 
 # Archivos generados por la aplicación
-output_pdfs/
+Contratos\ Generados/
 *.log
 
 # Archivos temporales de Typst

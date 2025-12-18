@@ -1,6 +1,6 @@
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload, selectinload
-from domain.schemas.parametricos_schema import ArtCreate, CategoriaCreate, ConvenioCreate, ObraSocialCreate, SindicatoCreate
+from src.domain.schemas.parametricos_schema import ArtCreate, CategoriaCreate, ConvenioCreate, ObraSocialCreate, SindicatoCreate
 from src.data.repositories.base_repository import BaseRepository
 from src.data.models.parametricos_model import Convenio, Categoria, Art, ObraSocial, Sindicato
 

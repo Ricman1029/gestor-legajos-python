@@ -6,7 +6,6 @@ from src.data.models.empresa_model import Empresa
 from src.data.repositories.empresa_repository import EmpresaRepository
 from src.data.repositories.empleado_repository import EmpleadoRepository
 from src.domain.services import PdfService
-from src.core.config import OUTPUT_DIR
 
 class GestorLegajosService:
     def __init__(self, session:AsyncSession):
@@ -19,14 +18,12 @@ class GestorLegajosService:
         print("Generando contrato generar_contrato_empleado")
         rutas_generadas = []
 
-        # 1. Obtener datos
         empleado = await self.empleado_repositorio.get_para_edicion(empleado_id)
         if not empleado: raise ValueError(f"Empleado no encontrado")
 
         empresa = await self.empresa_repositorio.get_para_edicion(empleado.empresa_id)
         if not empresa: raise ValueError("Empresa no encontrada")
 
-        # 2. Generar con Typst
         datos_typst = self._preparar_datos_typst(empleado, empresa)
         nombre_pdf = f"typst"
         ruta_typst = self.pdf_service.generar_contrato(datos_typst, nombre_pdf)
@@ -45,9 +42,7 @@ class GestorLegajosService:
         nombre_completo = empleado.apellido + "_" + empleado.nombre.replace(".", "").replace(" ", "_")
         ruta_contrato = self.pdf_service._unir_pdfs(rutas_generadas, nombre_completo)
 
-        if ruta_contrato:
-            return ruta_contrato
-        raise Exception("No se pudo generar el contrato final.")
+        return ruta_contrato
 
     def _preparar_datos_typst(self, empleado, empresa) -> dict:
         """
