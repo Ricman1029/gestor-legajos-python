@@ -56,15 +56,10 @@ sudo apt-get install libgstreamer1.0-0 gstreamer1.0-plugins-base gstreamer1.0-pl
 
 ## Cosas que todavía faltan agregar
 
-- [x] Notificaciones para las diferentes acciones  
 - [ ] Selector de carpeta para guardar legajos
-- [x] Validación para los campos de fechas
-- [x] Ver empleados activos e inactivos en la lista de empleados
-- [x] Cambiar el estado de los empleados en la lista de empleados
-- [x] Agregar lista de las obras sociales existentes
-- [x] Agregar lista de los convenios existentes
-- [x] Poder actualizar lista de obras sociales
-- [x] Agregar lista de categorias de cada empresa
-- [x] Agregar lista de sindicatos
-- [x] Poder elegir para cada empresa los archivos que conforman el legajo.
+- [ ] Poder elegir para cada empresa los archivos que conforman el legajo.
+- [ ] Poder agregar y preparar pdfs y formularios para incluir en el contrato.
+
+### Nota adicional
+Por ahora solo se pueden crear contratos para las ARTs Galeno, Mapfre y Andina. Proximamente se busca añadir una funcionalidad para poder generar el contrato con cualquier pdf que desée el usuario.
 

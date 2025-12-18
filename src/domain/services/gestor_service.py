@@ -53,6 +53,7 @@ class GestorLegajosService:
                     "razon_social": empresa.razon_social,
                     "cuit": empresa.cuit,
                     "convenio": empleado.categoria_rel.convenio.nombre,
+                    "numero_ieric": empresa.numero_ieric,
                     "contacto": {
                         "telefono": empresa.telefono,
                         "mail": empresa.mail

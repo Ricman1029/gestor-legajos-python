@@ -239,8 +239,14 @@
       #v(2.5em)
 
       #firma_empleador(empresa)
+
+      #if empresa.numero_ieric != "" {
+        align(center)[
+          #text(size: 8pt, fill: luma(100), "N° IERIC: " + empresa.numero_ieric)
+        ]
+      } 
     ]
-}
+  }
 
 #let recibo_constancia_inscripcion(empleado) = {
   encabezado_de_seccion("Acuse de Recibo del Trabajador")

@@ -16,6 +16,7 @@ class EmpresasPage(ft.Column):
         # --- INPUTS ---
         self.txt_razon_social = ft.TextField(label="Razón Social", expand=True)
         self.txt_cuit = ft.TextField(label="CUIT (sólo números)",max_length=11, expand=True)
+        self.txt_ieric = ft.TextField(label="Número de IERIC (solo empresas constructoras)", expand=True)
 
         self.lv_convenios = ft.Column(scroll=ft.ScrollMode.AUTO, height=150)
         self.text_error_convenio = ft.Text("", color=ft.Colors.ERROR, size=12, visible=False)
@@ -69,7 +70,7 @@ class EmpresasPage(ft.Column):
                     controls=[
                         ft.Text("Datos Fiscales", weight=ft.FontWeight.BOLD),
                         ft.Row([self.txt_razon_social, self.txt_cuit]),
-                        self.dd_art,
+                        ft.Row([self.dd_art, self.txt_ieric]),
                         ft.Divider(),
                         self.container_convenios,
                         ft.Divider(),
@@ -219,6 +220,7 @@ class EmpresasPage(ft.Column):
                     "cuit": self.txt_cuit.value,
                     "art_id": int(self.dd_art.value) if self.dd_art.value else 0,
                     "convenios_ids": ids_convenios,
+                    "numero_ieric": self.txt_ieric.value,
                     "calle": self.txt_calle.value,
                     "numero": self.txt_numero.value,
                     "piso": self.txt_piso.value,
@@ -268,6 +270,7 @@ class EmpresasPage(ft.Column):
 
                 self.txt_razon_social.value = empresa.razon_social
                 self.txt_cuit.value = empresa.cuit
+                self.txt_ieric.value = empresa.numero_ieric
                 self.dd_art.value = str(empresa.art_rel.id)
                 self.txt_calle.value = empresa.calle
                 self.txt_numero.value = empresa.numero
@@ -332,6 +335,7 @@ class EmpresasPage(ft.Column):
                     "razon_social": self.txt_razon_social,
                     "cuit": self.txt_cuit,
                     "art_id": self.dd_art,
+                    "numero_ieric": self.txt_ieric,
                     "calle": self.txt_calle,
                     "numero": self.txt_numero,
                     "piso": self.txt_piso,
@@ -384,7 +388,7 @@ class EmpresasPage(ft.Column):
         # 1. Limpiar campos anteriores
         todos_los_inputs = [
             self.txt_razon_social, self.txt_cuit, self.dd_art,
-            self.txt_calle, self.txt_numero, self.txt_piso,
+            self.txt_ieric, self.txt_calle, self.txt_numero, self.txt_piso,
             self.txt_depto, self.txt_localidad, self.txt_provincia,
             self.txt_codigo_postal, self.txt_telefono, self.txt_mail,
             ]
@@ -398,7 +402,7 @@ class EmpresasPage(ft.Column):
         # 1. Limpiar campos anteriores
         todos_los_inputs = [
             self.txt_razon_social, self.txt_cuit, self.dd_art,
-            self.txt_calle, self.txt_numero, self.txt_piso,
+            self.txt_ieric, self.txt_calle, self.txt_numero, self.txt_piso,
             self.txt_depto, self.txt_localidad, self.txt_provincia,
             self.txt_codigo_postal, self.txt_telefono, self.txt_mail,
             ]
