@@ -250,17 +250,16 @@ class EmpleadosPage(ft.Column):
                     nombre_archivo = os.path.basename(ruta_pdf)
                     url_relativa = f"/generated/{nombre_archivo}"
 
-                    self._mostrar_mensaje(
-                            ft.Row([
-                                ft.Text(f"El legajo fue generado con éxito"),
-                                ft.ElevatedButton(
-                                    "Descargar",
-                                    url=url_relativa,
-                                    url_target="_blank",
-                                    )
-                                ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
-                            ft.Colors.BLUE, duration=5000
+                    snack_contetnt = ft.Row([
+                        ft.Text(f"El legajo fue generado con éxito"),
+                        ft.ElevatedButton(
+                            "Descargar",
+                            url=url_relativa,
+                            url_target="_blank",
                             )
+                        ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                    self.page.open(ft.SnackBar(snack_contetnt, bgcolor=ft.Colors.BLUE, duration=5000))
+
                 if ruta_pdf:
                     self._mostrar_mensaje(f"El legajo fue generado con éxito en: {ruta_pdf}", ft.Colors.GREEN)
                 else:
