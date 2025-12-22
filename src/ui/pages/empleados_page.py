@@ -2,6 +2,7 @@ import flet as ft
 from datetime import datetime
 from pydantic import ValidationError
 from src.core.database import get_db
+from src.core.config import IS_WEB
 from src.data.repositories.empresa_repository import EmpresaRepository
 from src.data.repositories.parametricos_repository import CategoriaRepository, ObraSocialRepository
 from src.data.repositories.empleado_repository import EmpleadoRepository
@@ -243,7 +244,23 @@ class EmpleadosPage(ft.Column):
                 servicio = GestorLegajosService(session)
 
                 ruta_pdf = await servicio.generar_contrato_empleado(id_empleado)
+                
+                if IS_WEB:
+                    import os
+                    nombre_archivo = os.path.basename(ruta_pdf)
+                    url_relativa = f"/generated/{nombre_archivo}"
 
+                    self._mostrar_mensaje(
+                            ft.Row([
+                                ft.Text(f"El legajo fue generado con éxito"),
+                                ft.ElevatedButton(
+                                    "Descargar",
+                                    url=url_relativa,
+                                    url_target="_blank",
+                                    )
+                                ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                            ft.Colors.BLUE, duration=5000
+                            )
                 if ruta_pdf:
                     self._mostrar_mensaje(f"El legajo fue generado con éxito en: {ruta_pdf}", ft.Colors.GREEN)
                 else:
@@ -652,5 +669,5 @@ class EmpleadosPage(ft.Column):
             control.error_text = None
             control.update()
 
-    def _mostrar_mensaje(self, mensaje, color=ft.Colors.GREEN):
-        self.page.open(ft.SnackBar(ft.Text(mensaje), bgcolor=color))
+    def _mostrar_mensaje(self, mensaje, color=ft.Colors.GREEN, duration=4000):
+        self.page.open(ft.SnackBar(ft.Text(mensaje), bgcolor=color, duration=duration))

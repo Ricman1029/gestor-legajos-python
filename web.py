@@ -1,4 +1,8 @@
 import os
+import sys
+
+os.environ["APP_TYPE"] = "WEB"
+
 import flet as ft
 from src.main_app import main
 
