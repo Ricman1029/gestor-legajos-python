@@ -257,10 +257,10 @@ class EmpleadosPage(ft.Column):
                             url=url_relativa,
                             url_target="_blank",
                             )
-                        ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                        ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN)
                     self.page.open(ft.SnackBar(snack_contetnt, bgcolor=ft.Colors.BLUE, duration=5000))
 
-                if ruta_pdf:
+                elif ruta_pdf:
                     self._mostrar_mensaje(f"El legajo fue generado con éxito en: {ruta_pdf}", ft.Colors.GREEN)
                 else:
                     self._mostrar_mensaje("Error: El servicio no devolvió una ruta válida", ft.Colors.RED)
