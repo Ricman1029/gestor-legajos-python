@@ -22,7 +22,7 @@ if IS_FROZEN:
     OUTPUT_DIR = USER_DOCS / "Contratos Generados"
 elif IS_WEB:
     USER_DOCS = BASE_DIR
-    OUTPUT_DIR = ASSETS_DIR / "Contratos Generados"
+    OUTPUT_DIR = ASSETS_DIR / "generated"
 else:
     USER_DOCS = BASE_DIR
     OUTPUT_DIR = USER_DOCS / "Contratos Generados"
