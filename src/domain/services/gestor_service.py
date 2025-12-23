@@ -170,7 +170,7 @@ class GestorLegajosService:
                 
                 # --- Empresa ---
                 "empresa_razon_social": empresa.razon_social,
-                "empresa_cuit": empresa.cuit,
+                "empresa_cuit": self.formatear_cuit_cuil(empresa.cuit),
 
                 # Domicilio Empresa
                 "empresa_calle": empresa.calle,
@@ -209,4 +209,5 @@ class GestorLegajosService:
         return dni[0] + "." + dni[1:4] + "." + dni[4:]
 
     def formatear_direccion_completa(self, calle: str, numero: str, piso: str, depto: str):
-        return f"{calle} {numero} - Piso {piso}  Depto. {depto}"
+        piso_depto = f" - Piso {piso} Depto. {depto}" if piso or depto else ""
+        return f"{calle} {numero} {piso_depto}"
