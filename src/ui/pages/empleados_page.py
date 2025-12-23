@@ -541,7 +541,7 @@ class EmpleadosPage(ft.Column):
                 self._mostrar_mensaje("Error en fechas: Use formato DD/MM/AAAA", ft.Colors.RED)
                 return None
 
-        dni = self.txt_cuil.value[3:11] if self.txt_cuil.value else ""
+        dni = self.txt_cuil.value[2:10] if self.txt_cuil.value else ""
         sueldo = float(self.txt_sueldo.value) if self.txt_sueldo.value else 0.0
         categoria = int(self.dd_categoria.value) if self.dd_categoria.value else 0
 
